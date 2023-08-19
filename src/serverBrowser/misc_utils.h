@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "utils/str.h"
-#include "lobby_data.h"
+#include "vault.h"
 
 #define ONION_BIN_DIR "/mnt/SDCARD/.tmp_update/bin"
 #define RA_VER "/mnt/SDCARD/RetroArch/onion_ra_version.txt"

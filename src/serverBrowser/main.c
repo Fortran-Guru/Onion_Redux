@@ -34,7 +34,7 @@
 #include "misc_utils.h"
 #include "parse_json.h"
 #include "gui_draw.h"
-#include "lobby_data.h"
+#include "vault.h"
 #include "cache_local.h"
 
 #define FRAMES_PER_SECOND 60
@@ -497,20 +497,16 @@ int main(int argc, char *argv[])
     SDL_FillRect(video, NULL, 0);
     SDL_Flip(video);
 
+    // bit of cleanup 
+    log_output("Cleaning up");
     lang_free();
-
-
-    log_output("Freeing lists...");
     list_free(&list);
     freeServerGlobal();
     clearImageCache();
-    log_output(LOG_SUCCESS, "freed list");
-
     Mix_CloseAudio();
-
     resources_free();
     SDL_FreeSurface(screen);
     SDL_FreeSurface(video);
-
+    log_output("Cleanup complete");
     SDL_Quit();
 }

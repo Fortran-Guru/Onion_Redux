@@ -1,5 +1,5 @@
-#ifndef LOBBY_DATA_H
-#define LOBBY_DATA_H
+#ifndef VAULT_H
+#define VAULT_H
 
 // Below holds the cores and versions
 

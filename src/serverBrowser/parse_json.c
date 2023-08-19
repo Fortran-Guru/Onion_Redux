@@ -19,7 +19,7 @@
 // local
 #include "parse_json.h"
 #include "misc_utils.h"
-#include "lobby_data.h"
+#include "vault.h"
 
 #define JSON_STRING_LEN 256
 #define JSON_FORMAT_NUMBER "    \"%s\": %d,\n"
