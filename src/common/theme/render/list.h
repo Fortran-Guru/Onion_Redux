@@ -42,17 +42,18 @@ void theme_renderList(SDL_Surface *screen, List *list)
     SDL_BlitSurface(theme_background(), &bg_size, screen, &bg_pos);
 
     bool list_small = list->list_type == LIST_SMALL;
+    bool list_tiny = list->list_type == LIST_TINY;
 
     TTF_Font *list_font = resource_getFont(LIST);
 
     SDL_Rect item_bg_rect = {0, 60}, item_div_size = {0, 0, 640, 4},
-             item_bg_size = {0, 0, 640, list_small ? 56 : 90},
+             item_bg_size = {0, 0, 640, list_small ? 56 : list_tiny ? 40 : 90},
              toggle_rect = {0, 0};
 
-    int item_padding = list_small ? 4 : 0;
-    int item_height = list_small ? 60 : 90;
-    int label_y = list_small ? 27 : 37;
-    SDL_Surface *item_bg = resource_getSurface(list_small ? BG_LIST_S : BG_LIST_L);
+    int item_padding = list_small ? 4 : list_tiny ? 2 : 0;
+    int item_height = list_small ? 60 : list_tiny ? 43 : 90;
+    int label_y = list_small ? 27 : list_tiny ? 20 : 37;
+    SDL_Surface *item_bg = resource_getSurface(list_small || list_tiny ? BG_LIST_S : BG_LIST_L);
 
     int menu_pos_y = 420 - list->scroll_height * item_height;
     int last_item = list->scroll_pos + list->scroll_height;
@@ -150,7 +151,7 @@ void theme_renderList(SDL_Surface *screen, List *list)
                               offset_x, item_bg_rect.y + label_y,
                               list->active_pos == i, label_end, show_disabled);
 
-        if (!list_small && strlen(item->description)) {
+        if (!list_small && !list_tiny && strlen(item->description)) {
             theme_renderListLabel(
                 screen, item->description, theme()->grid.color, offset_x,
                 item_bg_rect.y + 62, list->active_pos == i, label_end, show_disabled);

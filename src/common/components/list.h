@@ -12,7 +12,8 @@
 #define MAX_NUM_VALUES 100
 
 typedef enum list_type { LIST_SMALL,
-                         LIST_LARGE } ListType;
+                         LIST_LARGE, 
+                         LIST_TINY } ListType;
 typedef enum item_type { ACTION,
                          TOGGLE,
                          MULTIVALUE } ListItemType;
@@ -158,6 +159,10 @@ ListItem *list_currentItem(List *list)
     if (list->active_pos >= list->item_count)
         return NULL;
     return &list->items[list->active_pos];
+}
+
+void list_updateStickyNote(ListItem *item, const char *message) {
+    strncpy(item->sticky_note, message, STR_MAX - 1);
 }
 
 void _list_scroll(List *list, int pos)

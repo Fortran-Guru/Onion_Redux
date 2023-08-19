@@ -54,4 +54,57 @@ SDL_Surface *theme_textboxSurface(const char *message, TTF_Font *font,
     return textbox;
 }
 
+void theme_renderExtendedTextbox(SDL_Surface *screen, int x, int y, const char *messages[8], int customFontSize) // used in server browser
+{
+    Theme_s *t = theme(); // call this so we can specify a font size
+    int col1_x = x;
+    int col2_x = x + 150;
+
+    char fontAbsolutePath[STR_MAX * 2];
+    snprintf(fontAbsolutePath, sizeof(fontAbsolutePath), "%s/%s", t->path, t->title.font);
+
+    TTF_Font *customFont = TTF_OpenFont(fontAbsolutePath, customFontSize);
+
+    if (!customFont) {
+        customFont = TTF_OpenFont("/customer/app/Exo-2-Bold-Italic.ttf", customFontSize);
+
+        if (!customFont) {
+            return;
+        }
+    }
+
+    for (int i = 0; i < 8; i++) {
+        if (messages[i]) {
+            char truncatedMessage[35];
+            if (strlen(messages[i]) > 28) {
+                strncpy(truncatedMessage, messages[i], 25);
+                truncatedMessage[25] = '\0';
+                strcat(truncatedMessage, "...");
+            } else {
+                strcpy(truncatedMessage, messages[i]);
+            }
+
+            SDL_Surface *messageSurface = TTF_RenderUTF8_Blended(customFont, truncatedMessage, theme()->title.color);
+            if (messageSurface) {
+                int yOffset;
+                int xOffset;
+                
+                if (i < 5) {
+                    yOffset = i * 31;
+                    xOffset = col1_x;
+                } else {
+                    yOffset = (i - 3) * 31;
+                    xOffset = col2_x;
+                }
+
+                SDL_Rect messageRect = {xOffset, y + yOffset};
+                SDL_BlitSurface(messageSurface, NULL, screen, &messageRect);
+                SDL_FreeSurface(messageSurface);
+            }
+        }
+    }
+
+    TTF_CloseFont(customFont);
+}
+
 #endif // RENDER_TEXTBOX_H__
