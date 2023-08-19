@@ -143,6 +143,8 @@ void actionJoinServer(void *item) {
 
 int main(int argc, char *argv[])
 {
+    coreVersionIndexer();
+    
     signal(SIGINT, sigHandler);
     signal(SIGTERM, sigHandler);
 
@@ -192,7 +194,7 @@ int main(int argc, char *argv[])
     List list = list_create(serverCountGlobal, LIST_TINY);
     
     printAllServers(); //debug
-    
+      
     if (serverCountGlobal > 0 && serversGlobal != NULL) {
         for (i = 0; i < serverCountGlobal; i++) {
             serversGlobal[i].local.romPath[0] = '\0';
@@ -425,7 +427,12 @@ int main(int argc, char *argv[])
                     if (strlen(selectedServer->local.corePath) == 0) {
                         drawgenericIcon(screen, CORE_MISSING, 555, 110);
                     } else {
-                        drawgenericIcon(screen, CORE_FOUND, 555, 110);
+                        const char* expectedCoreVersion = coreVersion(selectedServer->core);
+                        if (expectedCoreVersion == NULL || strcmp(selectedServer->coreVersion, expectedCoreVersion) != 0) {
+                            drawgenericIcon(screen, CORE_VER_MISMATCH, 555, 110);
+                        } else {
+                            drawgenericIcon(screen, CORE_FOUND, 555, 110);
+                        }
                     }
                     
                     // ra version checker

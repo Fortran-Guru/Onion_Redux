@@ -15,7 +15,7 @@
 
 int cache_count = 0;
 
-// Caching
+// File cache
 cJSON* readCacheFromFile() {
     FILE* file = fopen(LOCAL_CACHE, "rb");
     if (!file) return NULL;
@@ -91,7 +91,7 @@ void addRomToCacheLocal(const char* gameName, const char* romPath) {
 }
 
 
-// image caching
+// image cache
 
 SDL_Surface* getCachedImage(const char* img_path) {
     for (int i = 0; i < cache_count; i++) {

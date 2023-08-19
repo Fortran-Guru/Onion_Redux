@@ -320,3 +320,53 @@ char* buildImgPath(const char* rom_path) { // accepts the path of a rom and find
 
     return NULL;
 }
+
+
+// Index all our cores, there's about 101 but i've set the max to 200.... just incase
+int coreCount = 0;
+coreInfo coreArray[MAX_CORES];
+
+void coreVersionIndexer() {
+    DIR *dir;
+    struct dirent *entry;
+
+    if ((dir = opendir(BASE_PATH_CORE)) == NULL) {
+        perror("Failed to open directory");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        char *ext = strrchr(entry->d_name, '.');
+        if (ext && !strcmp(ext, ".info")) {
+            char filePath[512];
+            sprintf(filePath, "%s/%s", BASE_PATH_CORE, entry->d_name);
+            FILE *file = fopen(filePath, "r");
+            if (file) {
+                char line[STR_MAX];
+                int lineCount = 0;
+                while (fgets(line, sizeof(line), file) && lineCount <= 9) {
+                    lineCount++;
+                    if (lineCount == 5) {
+                        sscanf(line, "corename = \"%[^\"]\"", coreArray[coreCount].coreName);
+                    } else if (lineCount == 9) {
+                        sscanf(line, "display_version = \"%[^\"]\"", coreArray[coreCount].version);
+                        coreCount++;
+                    }
+                }
+                fclose(file);
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
+// give me a core name, i'll give you a core version
+const char* coreVersion(const char* coreName) {
+    for (int i = 0; i < coreCount; i++) {
+        if (strcmp(coreArray[i].coreName, coreName) == 0) {
+            return coreArray[i].version;
+        }
+    }
+    return NULL;
+}

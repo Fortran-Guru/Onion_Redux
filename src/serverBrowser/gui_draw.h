@@ -10,6 +10,7 @@
 
 // core
 #define CORE_FOUND RESOURCES_DIR "srvr_brwsr_c_found.png"
+#define CORE_VER_MISMATCH RESOURCES_DIR "srvr_brwsr_c_mismatch.png"
 #define CORE_MISSING RESOURCES_DIR "srvr_brwsr_c_missing.png"
 
 // RA version
