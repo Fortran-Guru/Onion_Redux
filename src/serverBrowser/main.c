@@ -133,8 +133,7 @@ void actionJoinServer(void *item) {
 
         miscLogOutput("Prepared command: %s", cmd_line);
 
-        miscLogOutput("CMD_OUTPUT: %s\n", cmd_line);
-        miscFreeServerGlobal();
+        printf("CMD_OUTPUT: %s\n", cmd_line); // leave me as printf.
         quit = true;
     }
     firstDialog = false;
@@ -388,6 +387,11 @@ int main(int argc, char *argv[])
                     Server *selectedServer = (Server *)selectedItem->payload_ptr;
                     
                     char truncatedFrontend[14];
+                    char gameCRCPrefixed[32];
+                    char raVersionPrefixed[20];
+
+                    sprintf(gameCRCPrefixed, "CRC: %s", selectedServer->gameCRC);
+                    sprintf(raVersionPrefixed, "Ver: %s", selectedServer->retroarchVersion);
 
                     if (strlen(selectedServer->frontend) > 10) {
                         strncpy(truncatedFrontend, selectedServer->frontend, 10);
@@ -400,12 +404,12 @@ int main(int argc, char *argv[])
                     const char *messages[] = {
                         selectedServer->name,
                         selectedServer->game,
-                        selectedServer->gameCRC,
+                        gameCRCPrefixed,
                         selectedServer->core,
-                        selectedServer->coreCRC,
+                        selectedServer->coreVersion,
                         truncatedFrontend,
                         selectedServer->ip,
-                        selectedServer->retroarchVersion,
+                        raVersionPrefixed,
                     };
                     
                     //draw gui elements
