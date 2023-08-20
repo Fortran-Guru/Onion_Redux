@@ -25,7 +25,6 @@ void cacheWriteToFile(cJSON* json);
 char* cacheLookupRomLocal(const char* gameName);
 void cacheAddRom(const char* gameName, const char* romPath);
 
-
 // image
 typedef struct ImageCache {
     const char* path;

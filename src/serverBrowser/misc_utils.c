@@ -18,7 +18,6 @@
 #include "misc_utils.h"
 #include "parse_json.h"
 #include "myriad_core.h"
-#include "vault.h"
 
 #define TIMEOUT_SECONDS 0
 #define TIMEOUT_USECONDS 500000  // 0.5s

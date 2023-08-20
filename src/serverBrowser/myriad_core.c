@@ -171,7 +171,7 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
 
                 char db_name[1024];
                 snprintf(db_name, sizeof(db_name), "%s/%s/%s_cache6.db", base_path_rom, folder_name, folder_name);
-
+                
                 struct stat db_stat;
                 if (stat(db_name, &db_stat) != 0 || db_stat.st_size == 0) {
                     // miscLogOutput("Database file %s either doesn't exist or is empty. Skipping...", db_name); // too much output

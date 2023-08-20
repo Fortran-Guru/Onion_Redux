@@ -34,7 +34,6 @@
 #include "misc_utils.h"
 #include "parse_json.h"
 #include "gui_draw.h"
-#include "vault.h"
 #include "cache_local.h"
 
 #define FRAMES_PER_SECOND 60
@@ -42,9 +41,7 @@
 
 /*
 TODO
-Build a struct that contains all of our core versions
 */
-
 
 bool startRetroarch = true;
 bool dataRetrieved = false;
@@ -260,7 +257,7 @@ int main(int argc, char *argv[])
                     }
                 } 
                 else {
-                    miscLogOutput("No romPath available for server: %s", serversGlobal[i].name);
+                    miscLogOutput("No romPath available for server: %s and rom: ", serversGlobal[i].name, serversGlobal[i].game);
                 }
             }
 

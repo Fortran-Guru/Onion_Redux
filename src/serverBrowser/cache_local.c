@@ -4,14 +4,15 @@
 #include <string.h>
 
 //onion
+#include "utils/str.h"
 #include "cjson/cJSON.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_ttf.h>
 
 //local
-#include "cache_local.h"
 #include "misc_utils.h"
+#include "cache_local.h"
 
 int cache_count = 0;
 
@@ -120,7 +121,7 @@ SDL_Surface* cacheGetImage(const char* img_path) {
     return newImage;
 }
 
-void cacheClearImageCache() {
+void cacheClearImageCache() { // free the image cache
     for (int i = 0; i < cache_count; i++) {
         SDL_FreeSurface(img_cache[i].surface);
         img_cache[i].path = NULL;
