@@ -9,7 +9,7 @@ char* myriadBuildImgPath(const char* rom_path);
 const char* myriadReturnCoreVer(const char* coreName);
 void myriadCoreVersionIndexer();
 
-#define MAX_CORES 200
+#define MAX_CORES 250 
 #define BASE_PATH_CORE "/mnt/SDCARD/RetroArch/.retroarch/cores"
 #define BASE_PATH_ROM "/mnt/SDCARD/Roms"
 

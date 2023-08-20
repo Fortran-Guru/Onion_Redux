@@ -294,7 +294,7 @@ char* myriadBuildImgPath(const char* rom_path) { // accepts the path of a rom an
 }
 
 
-// Index all our cores, there's about 101 but I've set the max to 200... just in case
+// Index all our cores, there's about 101 but I've set the max to 250 now (multile core defs in a .info)
 int coreCount = 0;
 coreInfo coreArray[MAX_CORES];
 
