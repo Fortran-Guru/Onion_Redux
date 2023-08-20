@@ -56,9 +56,9 @@ SDL_Surface *theme_textboxSurface(const char *message, TTF_Font *font,
 
 void theme_renderExtendedTextbox(SDL_Surface *screen, int x, int y, const char *messages[8], int customFontSize) // used in server browser
 {
-    Theme_s *t = theme(); // call this so we can specify a font size
+    Theme_s *t = theme(); // call this so we can specify a font size (does this need freeing, how is this struct built.. check.)
     int col1_x = x;
-    int col2_x = x + 150;
+    int col2_x = x + 165;
 
     char fontAbsolutePath[STR_MAX * 2];
     snprintf(fontAbsolutePath, sizeof(fontAbsolutePath), "%s/%s", t->path, t->title.font);
@@ -67,7 +67,6 @@ void theme_renderExtendedTextbox(SDL_Surface *screen, int x, int y, const char *
 
     if (!customFont) {
         customFont = TTF_OpenFont("/customer/app/Exo-2-Bold-Italic.ttf", customFontSize);
-
         if (!customFont) {
             return;
         }

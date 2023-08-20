@@ -27,11 +27,8 @@ bool miscIsServerReachable(const char* ip);
 // crc generation
 
 unsigned long miscCalculateCRC32(const char* path);
-
 char* miscGet7zCRC(const char* source);
-
 bool miscHasFileExt(const char* filename, const char* ext);
-
 int miscIsValidExt(const char *ext);
 
 // logging/debug

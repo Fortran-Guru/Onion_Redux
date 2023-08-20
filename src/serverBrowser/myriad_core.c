@@ -90,6 +90,9 @@ char* myriadSearchCorePath(const char* base_path, const char* core_name) { // ac
 }
 
 char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_pattern) { // accepts the base rom path and rom name and returns the rom full path, ***this is a fallback for an SQ search***
+
+    // miscLogOutput("romRecursive Start: Searching for ROM named %s in base path %s", rom_pattern, base_path_rom); // too much output, it's a self calling function
+    
     static char found_rom_path[STR_MAX + 1];
     memset(found_rom_path, 0, sizeof(found_rom_path));
 
@@ -122,11 +125,10 @@ char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_patter
                 char *ext = strrchr(entry->d_name, '.');
                 if (ext && miscIsValidExt(ext)) {
                     if (S_ISREG(stbuf.st_mode)) {
-                        miscLogOutput("Found valid ROM file at path: %s", full_path);
+                        miscLogOutput("romRecursive: Found valid ROM file at path: %s", full_path);
                         strncpy(found_rom_path, full_path, sizeof(found_rom_path) - 1);
                         found_rom_path[sizeof(found_rom_path) - 1] = '\0';
                         closedir(dir);
-                        miscLogOutput("Writing %s to found_rom_path in recurseRom", found_rom_path);
                         return found_rom_path;
                     } else {
                         miscLogOutput("The found path does not point to a valid file: %s", full_path);
@@ -138,6 +140,7 @@ char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_patter
     }
 
     closedir(dir);
+    // miscLogOutput("romRecursive: ROM not found in any directory.");   // too much output, it's a self calling function
     return NULL;
 }
 
@@ -149,7 +152,7 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
 
     DIR *dir = opendir(base_path_rom);
     if (!dir) {
-        miscLogOutput("Failed to open directory: %s", base_path_rom);
+        miscLogOutput("romSQ: Failed to open directory: %s", base_path_rom);
         return NULL;
     }
 
@@ -177,7 +180,7 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
 
                 rc = sqlite3_open(db_name, &db);
                 if (rc) {
-                    miscLogOutput("Can't open database: %s. Error: %s", db_name, sqlite3_errmsg(db));
+                    miscLogOutput("romSQ: Can't open database: %s. Error: %s", db_name, sqlite3_errmsg(db));
                     sqlite3_close(db);
                     continue;
                 }
@@ -200,13 +203,12 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
                     
                     struct stat file_stat;
                     if (stat(found_rom_path, &file_stat) == 0 && S_ISREG(file_stat.st_mode)) {
-                        miscLogOutput("Found valid ROM file at path: %s", found_rom_path);
+                        miscLogOutput("romSQ: Found valid ROM file at path: %s", found_rom_path);
                         found_rom_path[sizeof(found_rom_path) - 1] = '\0';
 
                         sqlite3_finalize(stmt);
                         sqlite3_close(db);
                         closedir(dir);
-                        miscLogOutput("Writing %s to found_rom_path in SQRom", found_rom_path);
                         return found_rom_path;
                     } else {
                         sqlite3_finalize(stmt);
@@ -223,7 +225,7 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
     }
 
     closedir(dir);
-    miscLogOutput("ROM not found in any directory.");
+    miscLogOutput("romSQ: ROM not found in any directory.");
     return NULL;
 }
 

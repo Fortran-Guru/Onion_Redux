@@ -389,23 +389,32 @@ int main(int argc, char *argv[])
                     char truncatedFrontend[14];
                     char gameCRCPrefixed[32];
                     char raVersionPrefixed[20];
+                    char truncatedCore[14];
 
                     sprintf(gameCRCPrefixed, "CRC: %s", selectedServer->gameCRC);
-                    sprintf(raVersionPrefixed, "Ver: %s", selectedServer->retroarchVersion);
+                    sprintf(raVersionPrefixed, "RA Ver: %s", selectedServer->retroarchVersion);
 
                     if (strlen(selectedServer->frontend) > 10) {
                         strncpy(truncatedFrontend, selectedServer->frontend, 10);
                         truncatedFrontend[10] = '\0';
-                        strcat(truncatedFrontend, "...");
+                        strcat(truncatedFrontend, "..");
                     } else {
                         strcpy(truncatedFrontend, selectedServer->frontend);
+                    }
+
+                    // Truncating the core
+                    if (strlen(selectedServer->core) > 13) {
+                        strncpy(truncatedCore, selectedServer->core, 13);
+                        truncatedCore[13] = '\0';
+                    } else {
+                        strcpy(truncatedCore, selectedServer->core);
                     }
 
                     const char *messages[] = {
                         selectedServer->name,
                         selectedServer->game,
                         gameCRCPrefixed,
-                        selectedServer->core,
+                        truncatedCore,
                         selectedServer->coreVersion,
                         truncatedFrontend,
                         selectedServer->ip,

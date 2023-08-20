@@ -1,7 +1,7 @@
 #ifndef VAULT_H
 #define VAULT_H
 
-// Below holds the cores and versions
+// Below holds the cores and version we pull with myriadCoreVersionIndexer
 
 typedef struct {
     char coreName[50];
