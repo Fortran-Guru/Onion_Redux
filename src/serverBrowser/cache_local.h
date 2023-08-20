@@ -1,14 +1,12 @@
 #ifndef CACHE_LOCAL_H
 #define CACHE_LOCAL_H
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
-#include <SDL/SDL_ttf.h>
+#include "gui_draw.h"
 #include "cjson/cJSON.h"
 
 #define LOCAL_CACHE "/mnt/SDCARD/.tmp_update/config/browserCache.json"
 #define MAX_CACHE_ENTRIES 10000 // file
-#define MAX_CACHE_SIZE 150 // image
+#define MAX_IMG_CACHE_SIZE 150 // image
 
 // File
 typedef struct {
@@ -31,7 +29,7 @@ typedef struct ImageCache {
     SDL_Surface* surface;
 } ImageCache;
 
-ImageCache img_cache[MAX_CACHE_SIZE];
+ImageCache img_cache[MAX_IMG_CACHE_SIZE];
 SDL_Surface* cacheGetImage(const char* img_path);
 void cacheClearImageCache();
 

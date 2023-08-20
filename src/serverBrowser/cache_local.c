@@ -5,10 +5,6 @@
 
 //onion
 #include "utils/str.h"
-#include "cjson/cJSON.h"
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
-#include <SDL/SDL_ttf.h>
 
 //local
 #include "misc_utils.h"
@@ -91,7 +87,6 @@ void cacheAddRom(const char* gameName, const char* romPath) {
     cJSON_Delete(json);
 }
 
-
 // image cache
 
 SDL_Surface* cacheGetImage(const char* img_path) {
@@ -104,7 +99,7 @@ SDL_Surface* cacheGetImage(const char* img_path) {
 
     SDL_Surface* newImage = IMG_Load(img_path);
     if (newImage) {
-        if (cache_count < MAX_CACHE_SIZE) {
+        if (cache_count < MAX_IMG_CACHE_SIZE) {
             img_cache[cache_count].path = img_path;
             img_cache[cache_count].surface = newImage;
             cache_count++;

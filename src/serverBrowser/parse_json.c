@@ -17,8 +17,8 @@
 #include "cjson/cJSON.h"
 
 // local
-#include "parse_json.h"
 #include "misc_utils.h"
+#include "parse_json.h"
 #include "vault.h"
 
 #define JSON_STRING_LEN 256
@@ -34,19 +34,19 @@
 // having to repeat some stuff and change the function name as including headers leads to multiple defs with how the codebase handles them but cjson removes reliance on jansson and yet another lib.
 // PHASE These out eventually vvvv 
 
-bool exists_new(const char *file_path)
+bool parseExists(const char *file_path)
 {
     struct stat buffer;
     return stat(file_path, &buffer) == 0;
 }
 
-const char *file_reader(const char *path)
+const char *parseFileReader(const char *path)
 {
     FILE *f = NULL;
     char *buffer = NULL;
     long length = 0;
 
-    if (!exists_new(path))
+    if (!parseExists(path))
         return NULL;
 
     if ((f = fopen(path, "rb"))) {
@@ -63,7 +63,7 @@ const char *file_reader(const char *path)
     return buffer;
 }
 
-bool json_getStringNew(cJSON *object, const char *key, char *dest)
+bool parseGetString(cJSON *object, const char *key, char *dest)
 {
     cJSON *json_object = cJSON_GetObjectItem(object, key);
     if (json_object) {
@@ -73,7 +73,7 @@ bool json_getStringNew(cJSON *object, const char *key, char *dest)
     return false;
 }
 
-bool json_getBoolNew(cJSON *object, const char *key, bool *dest)
+bool parseGetBool(cJSON *object, const char *key, bool *dest)
 {
     cJSON *json_object = cJSON_GetObjectItem(object, key);
     if (json_object) {
@@ -83,7 +83,7 @@ bool json_getBoolNew(cJSON *object, const char *key, bool *dest)
     return false;
 }
 
-bool json_getIntNew(cJSON *object, const char *key, int *dest)
+bool parseGetInt(cJSON *object, const char *key, int *dest)
 {
     cJSON *json_object = cJSON_GetObjectItem(object, key);
     if (json_object) {
@@ -95,10 +95,10 @@ bool json_getIntNew(cJSON *object, const char *key, int *dest)
 
 cJSON *json_loadNew(const char *file_path)
 {
-    return cJSON_Parse(file_reader(file_path));
+    return cJSON_Parse(parseFileReader(file_path));
 }
 
-void json_saveNew(cJSON *object, char *file_path)
+void parseSaveNet(cJSON *object, char *file_path)
 {
     if (object == NULL || file_path == NULL)
         return;
@@ -123,7 +123,7 @@ int serverCountGlobal = 0;
 
 void error(const char* msg);
 
-char* sendHttpRequest(const char* hostname, int portno, const char* message_fmt) { // standard function for pulling json data from a website, opens socket, sends request, returns goodies
+char* parseSendHTTPReq(const char* hostname, int portno, const char* message_fmt) { // standard function for pulling json data from a website, opens socket, sends request, returns goodies
     int sockfd, n;
     struct sockaddr_in serv_addr;
     struct hostent* server;
@@ -204,7 +204,7 @@ char* sendHttpRequest(const char* hostname, int portno, const char* message_fmt)
     return response;
 }
 
-void parse_json(const char *json_text) {
+void parseLobbyData(const char *json_text) {
     cJSON *root;
     cJSON *data, *fields;
     int array_size, i;
@@ -230,27 +230,27 @@ void parse_json(const char *json_text) {
         int port, mitm_port, host_method;
         bool has_password, has_spectate_password, connectable, is_retroarch;
 
-        json_getStringNew(fields, "username", username);
-        json_getStringNew(fields, "country", country);
-        json_getStringNew(fields, "game_name", game_name);
-        json_getStringNew(fields, "game_crc", game_crc);
-        json_getStringNew(fields, "core_name", core_name);
-        json_getStringNew(fields, "core_version", core_version);
-        json_getStringNew(fields, "subsystem_name", subsystem_name);
-        json_getStringNew(fields, "retroarch_version", retroarch_version);
-        json_getStringNew(fields, "frontend", frontend);
-        json_getStringNew(fields, "ip", ip);
-        json_getIntNew(fields, "port", &port);
-        json_getStringNew(fields, "mitm_ip", mitm_ip);
-        json_getIntNew(fields, "mitm_port", &mitm_port);
-        json_getStringNew(fields, "mitm_session", mitm_session);
-        json_getIntNew(fields, "host_method", &host_method);
-        json_getBoolNew(fields, "has_password", &has_password);
-        json_getBoolNew(fields, "has_spectate_password", &has_spectate_password);
-        json_getBoolNew(fields, "connectable", &connectable);
-        json_getBoolNew(fields, "is_retroarch", &is_retroarch);
-        json_getStringNew(fields, "created", created);
-        json_getStringNew(fields, "updated", updated);
+        parseGetString(fields, "username", username);
+        parseGetString(fields, "country", country);
+        parseGetString(fields, "game_name", game_name);
+        parseGetString(fields, "game_crc", game_crc);
+        parseGetString(fields, "core_name", core_name);
+        parseGetString(fields, "core_version", core_version);
+        parseGetString(fields, "subsystem_name", subsystem_name);
+        parseGetString(fields, "retroarch_version", retroarch_version);
+        parseGetString(fields, "frontend", frontend);
+        parseGetString(fields, "ip", ip);
+        parseGetInt(fields, "port", &port);
+        parseGetString(fields, "mitm_ip", mitm_ip);
+        parseGetInt(fields, "mitm_port", &mitm_port);
+        parseGetString(fields, "mitm_session", mitm_session);
+        parseGetInt(fields, "host_method", &host_method);
+        parseGetBool(fields, "has_password", &has_password);
+        parseGetBool(fields, "has_spectate_password", &has_spectate_password);
+        parseGetBool(fields, "connectable", &connectable);
+        parseGetBool(fields, "is_retroarch", &is_retroarch);
+        parseGetString(fields, "created", created);
+        parseGetString(fields, "updated", updated);
 
         // build the struct
 		serversGlobal = realloc(serversGlobal, (serverCountGlobal + 1) * sizeof(Server));
@@ -327,7 +327,7 @@ void parse_json(const char *json_text) {
     cJSON_Delete(root);
 }
 
-void retrieveData() { // will retry ONCE if it fails.
+void parseRetrieveData() { // will retry ONCE if it fails.
     if (!retryRetrieve) {
         miscLogOutput("Something went wrong with the json retrieval... retrying one more time.");
         return;
@@ -337,7 +337,7 @@ void retrieveData() { // will retry ONCE if it fails.
     int portno = 80;
     char* message_fmt = "GET /list HTTP/1.1\r\nHost: %s\r\nUser-Agent: MiyooMiniPlusOnion4.3\r\nConnection: close\r\n\r\n";
 
-    char* response = sendHttpRequest(hostname, portno, message_fmt);
+    char* response = parseSendHTTPReq(hostname, portno, message_fmt);
     if (response == NULL) {
         miscLogOutput("ERROR: Failed to retrieve server response\n");
         return;
@@ -348,7 +348,7 @@ void retrieveData() { // will retry ONCE if it fails.
         miscLogOutput("ERROR: JSON content not found\n");
         free(response);
         retryRetrieve = false;
-        retrieveData();
+        parseRetrieveData();
         return;
     }
 
@@ -357,14 +357,14 @@ void retrieveData() { // will retry ONCE if it fails.
         miscLogOutput("ERROR: End of JSON not found\n");
         free(response);
         retryRetrieve = false;
-        retrieveData();
+        parseRetrieveData();
         return;
     }
 
     *(json_end + 1) = '\0';
     
     miscLogOutput("Parsing data");
-    parse_json(json_start);
+    parseLobbyData(json_start);
     miscLogOutput("Found %d servers", serverCountGlobal);
     miscLogOutput("Freeing response data, if it exists.");
     free(response);

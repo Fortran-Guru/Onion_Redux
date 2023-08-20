@@ -5,6 +5,8 @@
 #include "utils/str.h"
 #include "vault.h"
 
+#include "cjson/cJSON.h"
+
 #define ONION_BIN_DIR "/mnt/SDCARD/.tmp_update/bin"
 #define RA_VER "/mnt/SDCARD/RetroArch/onion_ra_version.txt"
 

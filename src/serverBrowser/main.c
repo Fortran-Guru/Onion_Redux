@@ -21,7 +21,6 @@
 #include "system/keymap_hw.h"
 #include "system/keymap_sw.h"
 #include "system/lang.h"
-#include "system/settings.h"
 #include "theme/sound.h"
 #include "theme/theme.h"
 #include "utils/keystate.h"
@@ -30,8 +29,8 @@
 #include "utils/str.h"
 
 //local
-#include "myriad_core.h"
 #include "misc_utils.h"
+#include "myriad_core.h"
 #include "parse_json.h"
 #include "gui_draw.h"
 #include "cache_local.h"
@@ -172,7 +171,7 @@ int main(int argc, char *argv[])
 
         if(serverIsReachable) {
             miscLogOutput("Reachable! Sending data request");
-            retrieveData();
+            parseRetrieveData();
             myriadCoreVersionIndexer();
             miscLogOutput("Building server list");
         } else {
@@ -257,7 +256,7 @@ int main(int argc, char *argv[])
                     }
                 } 
                 else {
-                    miscLogOutput("No romPath available for server: %s and rom: ", serversGlobal[i].name, serversGlobal[i].game);
+                    miscLogOutput("No rom path available for server: %s and rom: ", serversGlobal[i].name, serversGlobal[i].game);
                 }
             }
 

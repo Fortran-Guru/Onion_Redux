@@ -1,6 +1,10 @@
 #ifndef GUI_DRAW_H
 #define GUI_DRAW_H
 
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+#include <SDL/SDL_ttf.h>
+
 #define RESOURCES_DIR "/mnt/SDCARD/App/ServerBrowser/res/"
 
 // roms

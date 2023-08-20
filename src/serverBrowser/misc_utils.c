@@ -18,6 +18,7 @@
 #include "misc_utils.h"
 #include "parse_json.h"
 #include "myriad_core.h"
+#include "vault.h"
 
 #define TIMEOUT_SECONDS 0
 #define TIMEOUT_USECONDS 500000  // 0.5s
@@ -42,7 +43,7 @@ const char *valid_extensions[] = { // probably dont need all these but it's evey
     ".ngc", ".sv", ".uze", ".sfc", ".vms", ".gb", NULL
 };
 
-unsigned short checksum(void *buffer, int len) {
+unsigned short checksum(void *buffer, int len) { // checksum for the ping, not really required.. only checking for "any" data back.
     unsigned short *buf = buffer;
     unsigned int sum = 0;
     unsigned short result;
@@ -62,7 +63,7 @@ unsigned short checksum(void *buffer, int len) {
     return result;
 }
 
-double miscGetLatency(const char *server_ip) {
+double miscGetLatency(const char *server_ip) { // ping a host, check the time for any sort of reply
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sock < 0) {
         perror("Failed to create raw socket");
@@ -158,11 +159,11 @@ bool miscWlan0Exists() { // quick check to see if wlan0 is active, if it's been 
     }
 }
 
-bool miscHasFileExt(const char* filename, const char* ext) {
+bool miscHasFileExt(const char* filename, const char* ext) { // does it have a file extension
     return (bool)(strstr(filename, ext) == filename + strlen(filename) - strlen(ext));
 }
 
-int miscIsValidExt(const char *ext) {
+int miscIsValidExt(const char *ext) { // is it in our valid extensions list
     for (int i = 0; valid_extensions[i] != NULL; i++) {
         if (strcmp(ext, valid_extensions[i]) == 0) {
             return 1;
@@ -238,7 +239,7 @@ void miscFreeServerGlobal() {
     }
 }
 
-bool miscStringContains(const char* str, const char* substr) {
+bool miscStringContains(const char* str, const char* substr) { // check if a string contains something
     return strstr(str, substr) != NULL;
 }
 

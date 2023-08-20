@@ -14,8 +14,8 @@
 #include <sqlite3/sqlite3.h>
 
 // local
-#include "myriad_core.h"
 #include "misc_utils.h"
+#include "myriad_core.h"
 #include "cache_local.h"
 
 /*
