@@ -20,10 +20,10 @@ typedef struct {
 
 CacheEntry cache[MAX_CACHE_ENTRIES];
 
-cJSON* readCacheFromFile();
-void writeCacheToFile(cJSON* json);
-char* lookupRomCacheLocal(const char* gameName);
-void addRomToCacheLocal(const char* gameName, const char* romPath);
+cJSON* cacheReadFromFile();
+void cacheWriteToFile(cJSON* json);
+char* cacheLookupRomLocal(const char* gameName);
+void cacheAddRom(const char* gameName, const char* romPath);
 
 
 // image
@@ -33,8 +33,8 @@ typedef struct ImageCache {
 } ImageCache;
 
 ImageCache img_cache[MAX_CACHE_SIZE];
-SDL_Surface* getCachedImage(const char* img_path);
-void clearImageCache();
+SDL_Surface* cacheGetImage(const char* img_path);
+void cacheClearImageCache();
 
 
 #endif // CACHE_LOCAL_H

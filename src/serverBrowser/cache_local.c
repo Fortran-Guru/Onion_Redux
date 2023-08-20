@@ -16,7 +16,7 @@
 int cache_count = 0;
 
 // File cache
-cJSON* readCacheFromFile() {
+cJSON* cacheReadFromFile() {
     FILE* file = fopen(LOCAL_CACHE, "rb");
     if (!file) return NULL;
 
@@ -34,7 +34,7 @@ cJSON* readCacheFromFile() {
     return json;
 }
 
-void writeCacheToFile(cJSON* json) {
+void cacheWriteToFile(cJSON* json) {
     FILE* file = fopen(LOCAL_CACHE, "wb");
     if (!file) return;
 
@@ -45,21 +45,21 @@ void writeCacheToFile(cJSON* json) {
     fclose(file);
 }
 
-char* lookupRomCacheLocal(const char* gameName) {
-    log_output("Looking up local ROM cache for game: %s", gameName);
-    cJSON* json = readCacheFromFile();
+char* cacheLookupRomLocal(const char* gameName) {
+    miscLogOutput("Looking up local ROM cache for game: %s", gameName);
+    cJSON* json = cacheReadFromFile();
     if (json) {
         cJSON* entry = NULL;
         cJSON_ArrayForEach(entry, json) {
             if (strcmp(cJSON_GetObjectItem(entry, "gameName")->valuestring, gameName) == 0) {
                 char* romPath = cJSON_GetObjectItem(entry, "romPath")->valuestring;
                 if (romPath[0] != '\0') {
-                    log_output("Found ROM in local cache: %s", romPath);
+                    miscLogOutput("Found ROM in local cache: %s", romPath);
                     char* returnPath = strdup(romPath); 
                     cJSON_Delete(json);
                     return returnPath;
                 } else {
-                    log_output("Entry found in local cache but ROM path is empty.");
+                    miscLogOutput("Entry found in local cache but ROM path is empty.");
                     cJSON_Delete(json);
                     return NULL;
                 }
@@ -67,14 +67,14 @@ char* lookupRomCacheLocal(const char* gameName) {
         }
         cJSON_Delete(json);
     }
-    log_output("Game not found in local cache.");
+    miscLogOutput("Game not found in local cache.");
     return NULL;
 }
 
 
-void addRomToCacheLocal(const char* gameName, const char* romPath) {
-    log_output("Adding ROM to local cache: %s -> %s", gameName, romPath);
-    cJSON* json = readCacheFromFile();
+void cacheAddRom(const char* gameName, const char* romPath) {
+    miscLogOutput("Adding ROM to local cache: %s -> %s", gameName, romPath);
+    cJSON* json = cacheReadFromFile();
     if (!json) json = cJSON_CreateArray();
 
     if (cJSON_GetArraySize(json) < MAX_CACHE_ENTRIES) {
@@ -83,9 +83,9 @@ void addRomToCacheLocal(const char* gameName, const char* romPath) {
         cJSON_AddStringToObject(entry, "romPath", romPath);
         cJSON_AddItemToArray(json, entry);
 
-        writeCacheToFile(json);
+        cacheWriteToFile(json);
     } else {
-        log_output("Warning: Local cache is full! ROM not added.");
+        miscLogOutput("Warning: Local cache is full! ROM not added.");
     }
     cJSON_Delete(json);
 }
@@ -93,10 +93,10 @@ void addRomToCacheLocal(const char* gameName, const char* romPath) {
 
 // image cache
 
-SDL_Surface* getCachedImage(const char* img_path) {
+SDL_Surface* cacheGetImage(const char* img_path) {
     for (int i = 0; i < cache_count; i++) {
         if (strcmp(img_cache[i].path, img_path) == 0) {
-            log_output("Fetching image from cache: %s", img_path);
+            miscLogOutput("Fetching image from cache: %s", img_path);
             return img_cache[i].surface;
         }
     }
@@ -107,24 +107,24 @@ SDL_Surface* getCachedImage(const char* img_path) {
             img_cache[cache_count].path = img_path;
             img_cache[cache_count].surface = newImage;
             cache_count++;
-            log_output("Image loaded and added to cache: %s", img_path);
+            miscLogOutput("Image loaded and added to cache: %s", img_path);
         } 
         else {
-            log_output("Cache full! Image loaded but not added to cache: %s", img_path);
+            miscLogOutput("Cache full! Image loaded but not added to cache: %s", img_path);
         }
     } 
     else {
-        log_output("Failed to load image: %s. SDL_image error: %s", img_path, IMG_GetError());
+        miscLogOutput("Failed to load image: %s. SDL_image error: %s", img_path, IMG_GetError());
     }
 
     return newImage;
 }
 
-void clearImageCache() {
+void cacheClearImageCache() {
     for (int i = 0; i < cache_count; i++) {
         SDL_FreeSurface(img_cache[i].surface);
         img_cache[i].path = NULL;
     }
-    log_output("Cache cleared. Total images removed: %d", cache_count);
+    miscLogOutput("Cache cleared. Total images removed: %d", cache_count);
     cache_count = 0;
 }

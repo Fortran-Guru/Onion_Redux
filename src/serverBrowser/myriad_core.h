@@ -1,13 +1,13 @@
 #ifndef MYRIAD_CORE_H
 #define MYRIAD_CORE_H
 
-char* searchcorePath(const char* base_path, const char* core_name);
-char* searchromPathSQ(const char* base_path_rom, const char* rom_pattern);
-char* searchromRecursive(const char* base_path_rom, const char* rom_pattern);
-char* buildImgPath(const char* rom_path);
+char* myriadSearchCorePath(const char* base_path, const char* core_name);
+char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_pattern);
+char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_pattern);
+char* myriadBuildImgPath(const char* rom_path);
 
-const char* coreVersion(const char* coreName);
-void coreVersionIndexer();
+const char* myriadReturnCoreVer(const char* coreName);
+void myriadCoreVersionIndexer();
 
 #define MAX_CORES 200
 #define BASE_PATH_CORE "/mnt/SDCARD/RetroArch/.retroarch/cores"

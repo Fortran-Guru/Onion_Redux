@@ -132,21 +132,21 @@ char* sendHttpRequest(const char* hostname, int portno, const char* message_fmt)
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     
     if (sockfd < 0) {
-        log_output("ERROR opening socket");
+        miscLogOutput("ERROR opening socket");
         return NULL;
     }
 
-    log_output("Socket created with fd: %d", sockfd);
+    miscLogOutput("Socket created with fd: %d", sockfd);
 
     server = gethostbyname(hostname);
     
     if (server == NULL) {
-        log_output("ERROR, no such host");
+        miscLogOutput("ERROR, no such host");
         close(sockfd);
         return NULL;
     }
 
-    log_output("Host %s found", hostname);
+    miscLogOutput("Host %s found", hostname);
     
     bzero((char*)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -156,18 +156,18 @@ char* sendHttpRequest(const char* hostname, int portno, const char* message_fmt)
     serv_addr.sin_port = htons(portno);
     
     if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-        log_output("ERROR connecting to %s:%d", hostname, portno);
+        miscLogOutput("ERROR connecting to %s:%d", hostname, portno);
         close(sockfd);
         return NULL;
     }
 
-    log_output("Connected to %s:%d", hostname, portno);
+    miscLogOutput("Connected to %s:%d", hostname, portno);
 
     sprintf(buffer, message_fmt, hostname);
     n = write(sockfd, buffer, strlen(buffer));
     
     if (n < 0) {
-        log_output("ERROR writing to socket");
+        miscLogOutput("ERROR writing to socket");
         close(sockfd);
         return NULL;
     }
@@ -181,26 +181,26 @@ char* sendHttpRequest(const char* hostname, int portno, const char* message_fmt)
         buffer[n] = '\0';
         response = realloc(response, response_length + n + 1);
         if (response == NULL) {
-            log_output("Memory allocation failed");
+            miscLogOutput("Memory allocation failed");
             close(sockfd);
             return NULL;
         }
         strcpy(response + response_length, buffer);
         response_length += n;
-        log_output("Received %d bytes from server", n);
+        miscLogOutput("Received %d bytes from server", n);
     }
 
     if (n < 0) {
-        log_output("ERROR reading from socket");
+        miscLogOutput("ERROR reading from socket");
         free(response);
         close(sockfd);
         return NULL;
     }
 
-    log_output("Total response length: %zu bytes", response_length);
+    miscLogOutput("Total response length: %zu bytes", response_length);
 
     close(sockfd);
-    log_output("Connection closed");
+    miscLogOutput("Connection closed");
     return response;
 }
 
@@ -212,7 +212,7 @@ void parse_json(const char *json_text) {
     root = cJSON_Parse(json_text);
 
     if (!root) {
-        log_output("error: failed to parse JSON");
+        miscLogOutput("error: failed to parse JSON");
         return;
     }
 
@@ -255,7 +255,7 @@ void parse_json(const char *json_text) {
         // build the struct
 		serversGlobal = realloc(serversGlobal, (serverCountGlobal + 1) * sizeof(Server));
         if (!serversGlobal) {
-            log_output("Failed to allocate memory");
+            miscLogOutput("Failed to allocate memory");
             return;
         }
 
@@ -296,30 +296,30 @@ void parse_json(const char *json_text) {
 		
 		// old struct testing logic at point of json
 		
-		// log_output("Name: %s\n", newServer->name);
-        // log_output("Country: %s\n", newServer->country);
-        // log_output("Game: %s\n", newServer->game);
-        // log_output("Game CRC: %s\n", newServer->gameCRC);
-        // log_output("Core: %s\n", newServer->core);
-        // log_output("Core Version: %s\n", newServer->coreVersion);
-        // log_output("Core CRC: %s\n", newServer->coreCRC);
-        // log_output("Subsystem Name: %s\n", newServer->subsystemName);
-        // log_output("Retroarch Version: %s\n", newServer->retroarchVersion);
-        // log_output("Frontend: %s\n", newServer->frontend);
-        // log_output("IP: %s\n", newServer->ip);
-        // log_output("Port: %d\n", newServer->port);
-        // log_output("MITM IP: %s\n", newServer->mitmIP);
-        // log_output("MITM Port: %d\n", newServer->mitmPort);
-        // log_output("MITM Session: %s\n", newServer->mitmSession);
-        // log_output("Host Method: %d\n", newServer->hostMethod);
-        // log_output("Has Password: %s\n", newServer->hasPassword ? "true" : "false");
-        // log_output("Has Spectate Password: %s\n", newServer->hasSpectatePassword ? "true" : "false");
-        // log_output("Connectable: %s\n", newServer->connectable ? "true" : "false");
-        // log_output("Is Retroarch: %s\n", newServer->isRetroarch ? "true" : "false");
-        // log_output("Created: %s\n", newServer->created);
-        // log_output("Updated: %s\n", newServer->updated);
+		// miscLogOutput("Name: %s\n", newServer->name);
+        // miscLogOutput("Country: %s\n", newServer->country);
+        // miscLogOutput("Game: %s\n", newServer->game);
+        // miscLogOutput("Game CRC: %s\n", newServer->gameCRC);
+        // miscLogOutput("Core: %s\n", newServer->core);
+        // miscLogOutput("Core Version: %s\n", newServer->coreVersion);
+        // miscLogOutput("Core CRC: %s\n", newServer->coreCRC);
+        // miscLogOutput("Subsystem Name: %s\n", newServer->subsystemName);
+        // miscLogOutput("Retroarch Version: %s\n", newServer->retroarchVersion);
+        // miscLogOutput("Frontend: %s\n", newServer->frontend);
+        // miscLogOutput("IP: %s\n", newServer->ip);
+        // miscLogOutput("Port: %d\n", newServer->port);
+        // miscLogOutput("MITM IP: %s\n", newServer->mitmIP);
+        // miscLogOutput("MITM Port: %d\n", newServer->mitmPort);
+        // miscLogOutput("MITM Session: %s\n", newServer->mitmSession);
+        // miscLogOutput("Host Method: %d\n", newServer->hostMethod);
+        // miscLogOutput("Has Password: %s\n", newServer->hasPassword ? "true" : "false");
+        // miscLogOutput("Has Spectate Password: %s\n", newServer->hasSpectatePassword ? "true" : "false");
+        // miscLogOutput("Connectable: %s\n", newServer->connectable ? "true" : "false");
+        // miscLogOutput("Is Retroarch: %s\n", newServer->isRetroarch ? "true" : "false");
+        // miscLogOutput("Created: %s\n", newServer->created);
+        // miscLogOutput("Updated: %s\n", newServer->updated);
 
-        // log_output("\n\n");
+        // miscLogOutput("\n\n");
 
         serverCountGlobal++;
     }
@@ -329,7 +329,7 @@ void parse_json(const char *json_text) {
 
 void retrieveData() { // will retry ONCE if it fails.
     if (!retryRetrieve) {
-        log_output("Something went wrong with the json retrieval... retrying one more time.");
+        miscLogOutput("Something went wrong with the json retrieval... retrying one more time.");
         return;
     }
 
@@ -339,13 +339,13 @@ void retrieveData() { // will retry ONCE if it fails.
 
     char* response = sendHttpRequest(hostname, portno, message_fmt);
     if (response == NULL) {
-        log_output("ERROR: Failed to retrieve server response\n");
+        miscLogOutput("ERROR: Failed to retrieve server response\n");
         return;
     }
 
     char* json_start = strstr(response, "[");
     if (json_start == NULL) {
-        log_output("ERROR: JSON content not found\n");
+        miscLogOutput("ERROR: JSON content not found\n");
         free(response);
         retryRetrieve = false;
         retrieveData();
@@ -354,7 +354,7 @@ void retrieveData() { // will retry ONCE if it fails.
 
     char* json_end = strrchr(response, ']');
     if (json_end == NULL) {
-        log_output("ERROR: End of JSON not found\n");
+        miscLogOutput("ERROR: End of JSON not found\n");
         free(response);
         retryRetrieve = false;
         retrieveData();
@@ -363,10 +363,10 @@ void retrieveData() { // will retry ONCE if it fails.
 
     *(json_end + 1) = '\0';
     
-    log_output("Parsing data");
+    miscLogOutput("Parsing data");
     parse_json(json_start);
-    log_output("Found %d servers", serverCountGlobal);
-    log_output("Freeing response data, if it exists.");
+    miscLogOutput("Found %d servers", serverCountGlobal);
+    miscLogOutput("Freeing response data, if it exists.");
     free(response);
     dataRetrieved = true;
 }

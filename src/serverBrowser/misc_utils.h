@@ -12,9 +12,9 @@ extern bool quit;
 
 // comms checks 
 
-double get_latency(const char *server_ip);
+double miscGetLatency(const char *server_ip);
 
-bool wlan0Exists();
+bool miscWlan0Exists();
 
 typedef struct {
     bool isReachable; 
@@ -22,36 +22,38 @@ typedef struct {
 } PingResult;
 
 PingResult getServerLatency(const char* ip);
-bool isServerReachable(const char* ip);
+bool miscIsServerReachable(const char* ip);
 
 // crc generation
 
-unsigned long calculateCRC32(const char* path);
+unsigned long miscCalculateCRC32(const char* path);
 
-char* get7zCRC(const char* source);
+char* miscGet7zCRC(const char* source);
 
-bool has_file_extension(const char* filename, const char* ext);
+bool miscHasFileExt(const char* filename, const char* ext);
+
+int miscIsValidExt(const char *ext);
 
 // logging/debug
 
-void log_output(const char *format, ...); // TODO - align with onion logging
-void printLocalData(const LocalData *data);
-void printServer(const Server *server);
-void printAllServers();
+void miscLogOutput(const char *format, ...); // TODO - align with onion logging
+void miscPrintLocalData(const LocalData *data);
+void miscPrintServer(const Server *server);
+void miscPrintAllServers();
 
 // freeing
 
-void freeServerGlobal();
+void miscFreeServerGlobal();
 
 // RA_VER
 
-char* getRAMajorVersion(void);
+char* miscGetRAMajorVersion(void);
 
 // RELAY CHECK
 
-bool hasRelay(const char* mitmIP);
+bool miscHasRelay(const char* mitmIP);
 
 // struct check
-bool stringContains(const char* str, const char* substr);
+bool miscStringContains(const char* str, const char* substr);
 
 #endif // MISC_UTILS_H
