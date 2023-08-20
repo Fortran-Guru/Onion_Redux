@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     settings_load();
     lang_load();
     serverCountGlobal = 0;
-       
+           
     if (!majorVersion) {
         miscLogOutput("Error retrieving the major version.\n");
         return 1;
@@ -175,8 +175,8 @@ int main(int argc, char *argv[])
 
         if(serverIsReachable) {
             miscLogOutput("Reachable! Sending data request");
-            myriadCoreVersionIndexer();
             retrieveData();
+            myriadCoreVersionIndexer();
             miscLogOutput("Building server list");
         } else {
             miscLogOutput("Unable to reach server, cannot continue");
@@ -438,6 +438,7 @@ int main(int argc, char *argv[])
                             drawgenericIcon(screen, CORE_FOUND, 555, 110);
                         }
                     }
+                    
                     
                     // ra version checker
                     if (strncmp(selectedServer->retroarchVersion, majorVersion, strlen(majorVersion)) == 0) {

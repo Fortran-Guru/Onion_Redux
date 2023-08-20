@@ -294,7 +294,7 @@ char* myriadBuildImgPath(const char* rom_path) { // accepts the path of a rom an
 }
 
 
-// Index all our cores, there's about 101 but i've set the max to 200.... just incase
+// Index all our cores, there's about 101 but I've set the max to 200... just in case
 int coreCount = 0;
 coreInfo coreArray[MAX_CORES];
 
@@ -302,8 +302,10 @@ void myriadCoreVersionIndexer() {
     DIR *dir;
     struct dirent *entry;
 
+    // miscLogOutput("Starting core version indexer...");
+
     if ((dir = opendir(BASE_PATH_CORE)) == NULL) {
-        perror("Failed to open directory");
+        miscLogOutput("Failed to open core directory.");
         return;
     }
 
@@ -312,33 +314,56 @@ void myriadCoreVersionIndexer() {
         if (ext && !strcmp(ext, ".info")) {
             char filePath[512];
             sprintf(filePath, "%s/%s", BASE_PATH_CORE, entry->d_name);
+
+            // miscLogOutput("Processing file: %s", filePath);
+
             FILE *file = fopen(filePath, "r");
             if (file) {
                 char line[STR_MAX];
-                int lineCount = 0;
-                while (fgets(line, sizeof(line), file) && lineCount <= 9) {
-                    lineCount++;
-                    if (lineCount == 5) {
+                int coreNameFound = 0;
+                int versionFound = 0;
+
+                while (fgets(line, sizeof(line), file) && (!coreNameFound || !versionFound)) {
+                    // Debug output for each line
+                    // miscLogOutput("Reading line: %s", line);
+
+                    if (!coreNameFound && strstr(line, "corename =")) {
                         sscanf(line, "corename = \"%[^\"]\"", coreArray[coreCount].coreName);
-                    } else if (lineCount == 9) {
+                        miscLogOutput("Extracted core name: %s", coreArray[coreCount].coreName);
+                        coreNameFound = 1;
+                    } 
+                    
+                    if (!versionFound && strstr(line, "display_version =")) {
                         sscanf(line, "display_version = \"%[^\"]\"", coreArray[coreCount].version);
-                        coreCount++;
+                        miscLogOutput("Extracted version: %s", coreArray[coreCount].version);
+                        versionFound = 1;
                     }
                 }
+
+                if(coreNameFound && versionFound) {
+                    coreCount++;
+                }
+
                 fclose(file);
+            } else {
+                miscLogOutput("Failed to open file: %s", filePath);
             }
         }
     }
 
     closedir(dir);
+    miscLogOutput("Finished indexing. Total cores found: %d", coreCount);
 }
 
-// give me a core name, i'll give you a core version
+// give me a core name, ill give you a core version
 const char* myriadReturnCoreVer(const char* coreName) {
+    miscLogOutput("Looking for core version of: %s", coreName);
     for (int i = 0; i < coreCount; i++) {
         if (strcmp(coreArray[i].coreName, coreName) == 0) {
+            miscLogOutput("Found core version: %s", coreArray[i].version);
             return coreArray[i].version;
         }
     }
+    miscLogOutput("Core version not found for: %s", coreName);
     return NULL;
 }
