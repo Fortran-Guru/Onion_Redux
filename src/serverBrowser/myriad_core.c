@@ -32,7 +32,7 @@ char* myriadSearchCorePath(const char* base_path, const char* core_name) { // ac
     DIR *dir = opendir(base_path);
 
     if (dir == NULL) {
-        miscLogOutput("Failed to open directory");
+        miscLogOutput(__func__, "Failed to open directory");
         return NULL;
     }
 
@@ -57,7 +57,7 @@ char* myriadSearchCorePath(const char* base_path, const char* core_name) { // ac
             if (strstr(entry->d_name, ".info")) {
                 FILE *file = fopen(full_path, "r");
                 if (file) {
-                    char line[256];
+                    char line[STR_MAX];
                     for (int i = 0; i < 5; i++) {
                         if(!fgets(line, sizeof(line), file)) {
                             break;
@@ -76,7 +76,7 @@ char* myriadSearchCorePath(const char* base_path, const char* core_name) { // ac
                         strncpy(found_path, full_path, sizeof(found_path)-1);
                         fclose(file);
                         closedir(dir);
-                        miscLogOutput("Found Core: %s", found_path);
+                        // miscLogOutput(__func__, "Found Core: %s", found_path);
                         return found_path;
                     }
                     fclose(file);
@@ -91,7 +91,7 @@ char* myriadSearchCorePath(const char* base_path, const char* core_name) { // ac
 
 char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_pattern) { // accepts the base rom path and rom name and returns the rom full path, ***this is a fallback for an SQ search***
 
-    // miscLogOutput("romRecursive Start: Searching for ROM named %s in base path %s", rom_pattern, base_path_rom); // too much output, it's a self calling function
+    // miscLogOutput(__func__, "romRecursive Start: Searching for ROM named %s in base path %s", rom_pattern, base_path_rom); // too much output, it's a self calling function
     
     static char found_rom_path[STR_MAX + 1];
     memset(found_rom_path, 0, sizeof(found_rom_path));
@@ -100,7 +100,7 @@ char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_patter
     DIR *dir = opendir(base_path_rom);
 
     if (dir == NULL) {
-        miscLogOutput("Failed to open directory");
+        miscLogOutput(__func__, "Failed to open directory");
         return NULL;
     }
 
@@ -125,13 +125,13 @@ char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_patter
                 char *ext = strrchr(entry->d_name, '.');
                 if (ext && miscIsValidExt(ext)) {
                     if (S_ISREG(stbuf.st_mode)) {
-                        miscLogOutput("romRecursive: Found valid ROM file at path: %s", full_path);
+                        miscLogOutput(__func__, "romRecursive: Found valid ROM file at path: %s", full_path);
                         strncpy(found_rom_path, full_path, sizeof(found_rom_path) - 1);
                         found_rom_path[sizeof(found_rom_path) - 1] = '\0';
                         closedir(dir);
                         return found_rom_path;
                     } else {
-                        miscLogOutput("The found path does not point to a valid file: %s", full_path);
+                        miscLogOutput(__func__, "The found path does not point to a valid file: %s", full_path);
                         return NULL;
                     }
                 }
@@ -140,7 +140,7 @@ char* myriadSearchRomRecursive(const char* base_path_rom, const char* rom_patter
     }
 
     closedir(dir);
-    // miscLogOutput("romRecursive: ROM not found in any directory.");   // too much output, it's a self calling function
+    // miscLogOutput(__func__, "romRecursive: ROM not found in any directory.");   // too much output, it's a self calling function
     return NULL;
 }
 
@@ -148,11 +148,11 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
     static char found_rom_path[STR_MAX];
     memset(found_rom_path, 0, sizeof(found_rom_path));
     
-    miscLogOutput("romSQ Start: Searching for ROM named %s in base path %s", rom_name, base_path_rom);
+    miscLogOutput(__func__, "romSQ Start: Searching for ROM named %s in base path %s", rom_name, base_path_rom);
 
     DIR *dir = opendir(base_path_rom);
     if (!dir) {
-        miscLogOutput("romSQ: Failed to open directory: %s", base_path_rom);
+        miscLogOutput(__func__, "romSQ: Failed to open directory: %s", base_path_rom);
         return NULL;
     }
 
@@ -167,20 +167,20 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
         if (entry->d_type == DT_DIR) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 strcpy(folder_name, entry->d_name);
-                // miscLogOutput("Processing folder: %s", folder_name); // too much output
+                // miscLogOutput(__func__, "Processing folder: %s", folder_name); // too much output
 
                 char db_name[1024];
                 snprintf(db_name, sizeof(db_name), "%s/%s/%s_cache6.db", base_path_rom, folder_name, folder_name);
                 
                 struct stat db_stat;
                 if (stat(db_name, &db_stat) != 0 || db_stat.st_size == 0) {
-                    // miscLogOutput("Database file %s either doesn't exist or is empty. Skipping...", db_name); // too much output
+                    // miscLogOutput(__func__, "Database file %s either doesn't exist or is empty. Skipping...", db_name); // too much output
                     continue;
                 }
 
                 rc = sqlite3_open(db_name, &db);
                 if (rc) {
-                    miscLogOutput("romSQ: Can't open database: %s. Error: %s", db_name, sqlite3_errmsg(db));
+                    miscLogOutput(__func__, "romSQ: Can't open database: %s. Error: %s", db_name, sqlite3_errmsg(db));
                     sqlite3_close(db);
                     continue;
                 }
@@ -203,7 +203,7 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
                     
                     struct stat file_stat;
                     if (stat(found_rom_path, &file_stat) == 0 && S_ISREG(file_stat.st_mode)) {
-                        miscLogOutput("romSQ: Found valid ROM file at path: %s", found_rom_path);
+                        miscLogOutput(__func__, "romSQ: Found valid ROM file at path: %s", found_rom_path);
                         found_rom_path[sizeof(found_rom_path) - 1] = '\0';
 
                         sqlite3_finalize(stmt);
@@ -225,13 +225,13 @@ char* myriadSearchRomPathSQ(const char* base_path_rom, const char* rom_name) {
     }
 
     closedir(dir);
-    miscLogOutput("romSQ: ROM not found in any directory.");
+    miscLogOutput(__func__, "romSQ: ROM not found in any directory.");
     return NULL;
 }
 
 char* myriadBuildImgPath(const char* rom_path) { // accepts the path of a rom and finds the img file, will move back 1 directory level incase roms are nested (like in some TBS)
     if (!rom_path) {
-        miscLogOutput("ROM path provided is NULL");
+        miscLogOutput(__func__, "ROM path provided is NULL");
         return NULL;
     }
 
@@ -242,13 +242,13 @@ char* myriadBuildImgPath(const char* rom_path) { // accepts the path of a rom an
 
     const char *last_slash = strrchr(rom_path, '/'); // there's an issue with struct data at the minute, you'll see "hhh" in some returns of this function
     if (!last_slash) {
-        miscLogOutput("Invalid ROM path provided: %s", rom_path);
+        miscLogOutput(__func__, "Invalid ROM path provided: %s", rom_path);
         return NULL;
     }
 
     size_t base_path_len = last_slash - rom_path;
     if (base_path_len >= sizeof(base_path)) {
-        miscLogOutput("ROM path too long: %s", rom_path);
+        miscLogOutput(__func__, "ROM path too long: %s", rom_path);
         return NULL;
     }
 
@@ -277,7 +277,7 @@ char* myriadBuildImgPath(const char* rom_path) { // accepts the path of a rom an
             
             struct stat stbuf;
             if (stat(img_path, &stbuf) == 0 && !S_ISDIR(stbuf.st_mode)) {
-                miscLogOutput("Found img at: %s", img_path);
+                miscLogOutput(__func__, "Found img at: %s", img_path);
                 imageFound = true;
                 return img_path;
             }
@@ -289,7 +289,7 @@ char* myriadBuildImgPath(const char* rom_path) { // accepts the path of a rom an
     }
 
     if (!imageFound) {
-        miscLogOutput("No image found for ROM: %s", rom_path);
+        miscLogOutput(__func__, "No image found for ROM: %s", rom_path);
     }
 
     return NULL;
@@ -304,10 +304,10 @@ void myriadCoreVersionIndexer() {
     DIR *dir;
     struct dirent *entry;
 
-    // miscLogOutput("Starting core version indexer...");
+    // miscLogOutput(__func__, "Starting core version indexer...");
 
     if ((dir = opendir(BASE_PATH_CORE)) == NULL) {
-        miscLogOutput("Failed to open core directory.");
+        miscLogOutput(__func__, "Failed to open core directory.");
         return;
     }
 
@@ -317,7 +317,7 @@ void myriadCoreVersionIndexer() {
             char filePath[512];
             sprintf(filePath, "%s/%s", BASE_PATH_CORE, entry->d_name);
 
-            // miscLogOutput("Processing file: %s", filePath);
+            // miscLogOutput(__func__, "Processing file: %s", filePath);
 
             FILE *file = fopen(filePath, "r");
             if (file) {
@@ -327,17 +327,15 @@ void myriadCoreVersionIndexer() {
 
                 while (fgets(line, sizeof(line), file) && (!coreNameFound || !versionFound)) {
                     // Debug output for each line
-                    // miscLogOutput("Reading line: %s", line);
+                    // miscLogOutput(__func__, "Reading line: %s", line);
 
                     if (!coreNameFound && strstr(line, "corename =")) {
                         sscanf(line, "corename = \"%[^\"]\"", coreArray[coreCount].coreName);
-                        miscLogOutput("Extracted core name: %s", coreArray[coreCount].coreName);
                         coreNameFound = 1;
                     } 
                     
                     if (!versionFound && strstr(line, "display_version =")) {
                         sscanf(line, "display_version = \"%[^\"]\"", coreArray[coreCount].version);
-                        miscLogOutput("Extracted version: %s", coreArray[coreCount].version);
                         versionFound = 1;
                     }
                 }
@@ -348,24 +346,24 @@ void myriadCoreVersionIndexer() {
 
                 fclose(file);
             } else {
-                miscLogOutput("Failed to open file: %s", filePath);
+                miscLogOutput(__func__, "Failed to open file: %s", filePath);
             }
         }
     }
 
     closedir(dir);
-    miscLogOutput("Finished indexing. Total cores found: %d", coreCount);
+    miscLogOutput(__func__, "Finished indexing. Total cores found: %d", coreCount);
 }
 
 // give me a core name, ill give you a core version
 const char* myriadReturnCoreVer(const char* coreName) {
-    miscLogOutput("Looking for core version of: %s", coreName);
+    miscLogOutput(__func__, "Looking for core version of: %s", coreName);
     for (int i = 0; i < coreCount; i++) {
         if (strcmp(coreArray[i].coreName, coreName) == 0) {
-            miscLogOutput("Found core version: %s", coreArray[i].version);
+            miscLogOutput(__func__, "Found core version: %s", coreArray[i].version);
             return coreArray[i].version;
         }
     }
-    miscLogOutput("Core version not found for: %s", coreName);
+    miscLogOutput(__func__, "Core version not found for: %s", coreName);
     return NULL;
 }

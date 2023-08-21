@@ -10,9 +10,9 @@
 
 // File
 typedef struct {
-    char gameName[256];
+    char gameName[STR_MAX];
     char romPath[1024];
-    char coreName[256];
+    char coreName[STR_MAX];
     char corePath[1024];
 } CacheEntry;
 
@@ -20,8 +20,8 @@ CacheEntry cache[MAX_CACHE_ENTRIES];
 
 cJSON* cacheReadFromFile();
 void cacheWriteToFile(cJSON* json);
-char* cacheLookupRomLocal(const char* gameName);
-void cacheAddRom(const char* gameName, const char* romPath);
+char* cacheLookupRomLocal(const char* identifier, bool isCRC);
+void cacheAddRom(const char* gameName, const char* romPath, const char* crc);
 
 // image
 typedef struct ImageCache {

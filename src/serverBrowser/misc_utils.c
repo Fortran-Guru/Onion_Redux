@@ -5,10 +5,8 @@
 #include <sys/wait.h>
 #include <stdarg.h> 
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <netinet/ip_icmp.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
+
 #include <sys/stat.h>
 
 //onion
@@ -19,10 +17,6 @@
 #include "parse_json.h"
 #include "myriad_core.h"
 #include "vault.h"
-
-#define TIMEOUT_SECONDS 0
-#define TIMEOUT_USECONDS 500000  // 0.5s
-#define ICMP_ECHO_REQUEST 8
 
 const char *valid_extensions[] = { // probably dont need all these but it's eveyrthing for now
     ".zip", ".rom", ".iso", ".bin", ".gba", ".nes", ".snes", 
@@ -42,77 +36,6 @@ const char *valid_extensions[] = { // probably dont need all these but it's evey
     ".pbp", ".lnx", ".ws", ".pc2", ".mgw", ".min", ".ngp", 
     ".ngc", ".sv", ".uze", ".sfc", ".vms", ".gb", NULL
 };
-
-unsigned short checksum(void *buffer, int len) { // checksum for the ping, not really required.. only checking for "any" data back.
-    unsigned short *buf = buffer;
-    unsigned int sum = 0;
-    unsigned short result;
-
-    for (sum = 0; len > 1; len -= 2) {
-        sum += *buf++;
-    }
-
-    if (len == 1) {
-        sum += *(unsigned char*)buf;
-    }
-
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    result = ~sum;
-
-    return result;
-}
-
-double miscGetLatency(const char *server_ip) { // ping a host, check the time for any sort of reply
-    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sock < 0) {
-        perror("Failed to create raw socket");
-        exit(1);
-    }
-
-    struct timeval timeout;
-    timeout.tv_sec = TIMEOUT_SECONDS;
-    timeout.tv_usec = TIMEOUT_USECONDS;
-
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-        perror("Error setting socket timeout");
-        close(sock);
-        exit(1);
-    }
-
-    struct sockaddr_in server_addr;
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    inet_pton(AF_INET, server_ip, &server_addr.sin_addr);
-
-    struct icmp icmp_hdr;
-    memset(&icmp_hdr, 0, sizeof(icmp_hdr));
-    icmp_hdr.icmp_type = ICMP_ECHO_REQUEST;
-    icmp_hdr.icmp_cksum = checksum(&icmp_hdr, sizeof(icmp_hdr));
-
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-
-    if (sendto(sock, &icmp_hdr, sizeof(icmp_hdr), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) <= 0) {
-        perror("Failed to send");
-        close(sock);
-        return -1.0;
-    }
-
-    char buffer[1024];
-    struct sockaddr_in response_addr;
-    socklen_t response_addr_len = sizeof(response_addr);
-    if (recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&response_addr, &response_addr_len) > 0) {
-        gettimeofday(&end, NULL);
-        double time_taken = (end.tv_sec - start.tv_sec) * 1e6;
-        time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
-        close(sock);
-        return time_taken;
-    }
-
-    close(sock);
-    return -1.0;
-}
 
 static char cachedVersion[STR_MAX] = {0};
 
@@ -146,19 +69,6 @@ char* miscGetRAMajorVersion() { // pull our RA version info to compare against t
     return cachedVersion;
 }
 
-bool miscHasRelay(const char* mitmIP) { // check if the mitm struct member contains a hostname (it'll be longer than 8 chars if so, shorter if not)
-    return strlen(mitmIP) > 8;
-}
-
-bool miscWlan0Exists() { // quick check to see if wlan0 is active, if it's been disabled it disappears from the net class
-    struct stat st;
-    if (stat("/sys/class/net/wlan0", &st) == 0 && S_ISDIR(st.st_mode)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 bool miscHasFileExt(const char* filename, const char* ext) { // does it have a file extension
     return (bool)(strstr(filename, ext) == filename + strlen(filename) - strlen(ext));
 }
@@ -170,17 +80,6 @@ int miscIsValidExt(const char *ext) { // is it in our valid extensions list
         }
     }
     return 0;
-}
-
-bool miscIsServerReachable(const char* ip) { // checks servers are reachable
-    char command[256];
-    miscLogOutput("Pinging server %s", ip);
-    snprintf(command, sizeof(command), "ping -c 1 -w 1 %s", ip);
-
-    int exitStatus = system(command);
-
-    miscLogOutput("Finished pinging %s with status: %d", ip, exitStatus);
-    return WEXITSTATUS(exitStatus) == 0;
 }
 
 char* miscGet7zCRC(const char* path) { // 7z supports spitting out a crc32 natively 
@@ -205,7 +104,7 @@ char* miscGet7zCRC(const char* path) { // 7z supports spitting out a crc32 nativ
     pclose(pipe);
 
     crcValue[strcspn(crcValue, "\n")] = 0;
-    miscLogOutput("Found local Rom CRC: %s", crcValue);
+    miscLogOutput(__func__, "Calculated local rom CRC: %s \n", crcValue);
     
     return strdup(crcValue);
 }
@@ -213,7 +112,7 @@ char* miscGet7zCRC(const char* path) { // 7z supports spitting out a crc32 nativ
 unsigned long miscCalculateCRC32(const char* path) { // calculates the crc32 using xcrc logic w/ zlib libs
     FILE* file = fopen(path, "rb");
     if (!file) {
-        miscLogOutput("File open error");
+        miscLogOutput(__func__, "File open error");
         return 0;
     }
 
@@ -224,7 +123,7 @@ unsigned long miscCalculateCRC32(const char* path) { // calculates the crc32 usi
 
     while ((bytesRead = fread(buffer, sizeof(unsigned char), bufferSize, file)) > 0) {
         crc = crc32(crc, buffer, bytesRead);
-        miscLogOutput("Found local Rom CRC: %lu", crc);
+        miscLogOutput(__func__, "Calculated local rom CRC: %lu \n", crc);
     }
 
     fclose(file);
@@ -243,10 +142,10 @@ bool miscStringContains(const char* str, const char* substr) { // check if a str
     return strstr(str, substr) != NULL;
 }
 
-void miscLogOutput(const char *format, ...) { // to log to terminal for uart
+void miscLogOutput(const char *caller, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "[BROWSER] ");
+    fprintf(stderr, "[BROWSER] [%s] ", caller);
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     va_end(args);
@@ -254,37 +153,37 @@ void miscLogOutput(const char *format, ...) { // to log to terminal for uart
 }
 
 void miscPrintLocalData(const LocalData *data) { // debug code
-    miscLogOutput("LocalData:\n");
-    miscLogOutput("\tromPath: %s\n", data->romPath);
-    miscLogOutput("\tcorePath: %s\n", data->corePath);
-    miscLogOutput("\timgPath: %s\n", data->imgPath);
-    miscLogOutput("\tlocalRomCRC: %s\n", data->localRomCRC);
+    miscLogOutput(__func__, "LocalData:\n");
+    miscLogOutput(__func__, "\tromPath: %s\n", data->romPath);
+    miscLogOutput(__func__, "\tcorePath: %s\n", data->corePath);
+    miscLogOutput(__func__, "\timgPath: %s\n", data->imgPath);
+    miscLogOutput(__func__, "\tlocalRomCRC: %s\n", data->localRomCRC);
 }
 
 void miscPrintServer(const Server *server) { // debug code
-    miscLogOutput("Server:\n");
-    miscLogOutput("name: %s\n", server->name);
-    miscLogOutput("country: %s\n", server->country);
-    miscLogOutput("game: %s\n", server->game);
-    miscLogOutput("gameCRC: %s\n", server->gameCRC);
-    miscLogOutput("core: %s\n", server->core);
-    miscLogOutput("coreVersion: %s\n", server->coreVersion);
-    miscLogOutput("coreCRC: %s\n", server->coreCRC);
-    miscLogOutput("subsystemName: %s\n", server->subsystemName);
-    miscLogOutput("retroarchVersion: %s\n", server->retroarchVersion);
-    miscLogOutput("frontend: %s\n", server->frontend);
-    miscLogOutput("ip: %s\n", server->ip);
-    miscLogOutput("port: %d\n", server->port);
-    miscLogOutput("mitmIP: %s\n", server->mitmIP);
-    miscLogOutput("mitmPort: %d\n", server->mitmPort);
-    miscLogOutput("mitmSession: %s\n", server->mitmSession);
-    miscLogOutput("hostMethod: %d\n", server->hostMethod);
-    miscLogOutput("hasPassword: %d\n", server->hasPassword);
-    miscLogOutput("hasSpectatePassword: %d\n", server->hasSpectatePassword);
-    miscLogOutput("connectable: %d\n", server->connectable);
-    miscLogOutput("isRetroarch: %d\n", server->isRetroarch);
-    miscLogOutput("created: %s\n", server->created);
-    miscLogOutput("updated: %s\n", server->updated);
+    miscLogOutput(__func__, "Server:\n");
+    miscLogOutput(__func__, "name: %s\n", server->name);
+    miscLogOutput(__func__, "country: %s\n", server->country);
+    miscLogOutput(__func__, "game: %s\n", server->game);
+    miscLogOutput(__func__, "gameCRC: %s\n", server->gameCRC);
+    miscLogOutput(__func__, "core: %s\n", server->core);
+    miscLogOutput(__func__, "coreVersion: %s\n", server->coreVersion);
+    miscLogOutput(__func__, "coreCRC: %s\n", server->coreCRC);
+    miscLogOutput(__func__, "subsystemName: %s\n", server->subsystemName);
+    miscLogOutput(__func__, "retroarchVersion: %s\n", server->retroarchVersion);
+    miscLogOutput(__func__, "frontend: %s\n", server->frontend);
+    miscLogOutput(__func__, "ip: %s\n", server->ip);
+    miscLogOutput(__func__, "port: %d\n", server->port);
+    miscLogOutput(__func__, "mitmIP: %s\n", server->mitmIP);
+    miscLogOutput(__func__, "mitmPort: %d\n", server->mitmPort);
+    miscLogOutput(__func__, "mitmSession: %s\n", server->mitmSession);
+    miscLogOutput(__func__, "hostMethod: %d\n", server->hostMethod);
+    miscLogOutput(__func__, "hasPassword: %d\n", server->hasPassword);
+    miscLogOutput(__func__, "hasSpectatePassword: %d\n", server->hasSpectatePassword);
+    miscLogOutput(__func__, "connectable: %d\n", server->connectable);
+    miscLogOutput(__func__, "isRetroarch: %d\n", server->isRetroarch);
+    miscLogOutput(__func__, "created: %s\n", server->created);
+    miscLogOutput(__func__, "updated: %s\n", server->updated);
     
     miscPrintLocalData(&server->local);
 }
@@ -292,8 +191,7 @@ void miscPrintServer(const Server *server) { // debug code
 void miscPrintAllServers() { // debug code
     for(int i = 0; i < serverCountGlobal; i++) {
         miscPrintServer(&serversGlobal[i]);
-        miscLogOutput("\n");
+        miscLogOutput(__func__, "\n");
     }
 }
-
 

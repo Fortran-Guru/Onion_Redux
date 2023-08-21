@@ -21,7 +21,7 @@
 #include "parse_json.h"
 #include "vault.h"
 
-#define JSON_STRING_LEN 256
+#define JSON_STRING_LEN STR_MAX
 #define JSON_FORMAT_NUMBER "    \"%s\": %d,\n"
 #define JSON_FORMAT_NUMBER_NC "    \"%s\": %d\n"
 #define JSON_FORMAT_STRING "    \"%s\": \"%s\",\n"
@@ -132,21 +132,21 @@ char* parseSendHTTPReq(const char* hostname, int portno, const char* message_fmt
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     
     if (sockfd < 0) {
-        miscLogOutput("ERROR opening socket");
+        miscLogOutput(__func__, "ERROR opening socket");
         return NULL;
     }
 
-    miscLogOutput("Socket created with fd: %d", sockfd);
+    miscLogOutput(__func__, "Socket created with fd: %d", sockfd);
 
     server = gethostbyname(hostname);
     
     if (server == NULL) {
-        miscLogOutput("ERROR, no such host");
+        miscLogOutput(__func__, "ERROR, no such host");
         close(sockfd);
         return NULL;
     }
 
-    miscLogOutput("Host %s found", hostname);
+    miscLogOutput(__func__, "Host %s found", hostname);
     
     bzero((char*)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -156,18 +156,18 @@ char* parseSendHTTPReq(const char* hostname, int portno, const char* message_fmt
     serv_addr.sin_port = htons(portno);
     
     if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-        miscLogOutput("ERROR connecting to %s:%d", hostname, portno);
+        miscLogOutput(__func__, "ERROR connecting to %s:%d", hostname, portno);
         close(sockfd);
         return NULL;
     }
 
-    miscLogOutput("Connected to %s:%d", hostname, portno);
+    miscLogOutput(__func__, "Connected to %s:%d", hostname, portno);
 
     sprintf(buffer, message_fmt, hostname);
     n = write(sockfd, buffer, strlen(buffer));
     
     if (n < 0) {
-        miscLogOutput("ERROR writing to socket");
+        miscLogOutput(__func__, "ERROR writing to socket");
         close(sockfd);
         return NULL;
     }
@@ -181,26 +181,26 @@ char* parseSendHTTPReq(const char* hostname, int portno, const char* message_fmt
         buffer[n] = '\0';
         response = realloc(response, response_length + n + 1);
         if (response == NULL) {
-            miscLogOutput("Memory allocation failed");
+            miscLogOutput(__func__, "Memory allocation failed");
             close(sockfd);
             return NULL;
         }
         strcpy(response + response_length, buffer);
         response_length += n;
-        miscLogOutput("Received %d bytes from server", n);
+        miscLogOutput(__func__, "Received %d bytes from server", n);
     }
 
     if (n < 0) {
-        miscLogOutput("ERROR reading from socket");
+        miscLogOutput(__func__, "ERROR reading from socket");
         free(response);
         close(sockfd);
         return NULL;
     }
 
-    miscLogOutput("Total response length: %zu bytes", response_length);
+    miscLogOutput(__func__, "Total response length: %zu bytes", response_length);
 
     close(sockfd);
-    miscLogOutput("Connection closed");
+    miscLogOutput(__func__, "Connection closed");
     return response;
 }
 
@@ -212,7 +212,7 @@ void parseLobbyData(const char *json_text) {
     root = cJSON_Parse(json_text);
 
     if (!root) {
-        miscLogOutput("error: failed to parse JSON");
+        miscLogOutput(__func__, "error: failed to parse JSON");
         return;
     }
 
@@ -255,7 +255,7 @@ void parseLobbyData(const char *json_text) {
         // build the struct
 		serversGlobal = realloc(serversGlobal, (serverCountGlobal + 1) * sizeof(Server));
         if (!serversGlobal) {
-            miscLogOutput("Failed to allocate memory");
+            miscLogOutput(__func__, "Failed to allocate memory");
             return;
         }
 
@@ -296,30 +296,30 @@ void parseLobbyData(const char *json_text) {
 		
 		// old struct testing logic at point of json
 		
-		// miscLogOutput("Name: %s\n", newServer->name);
-        // miscLogOutput("Country: %s\n", newServer->country);
-        // miscLogOutput("Game: %s\n", newServer->game);
-        // miscLogOutput("Game CRC: %s\n", newServer->gameCRC);
-        // miscLogOutput("Core: %s\n", newServer->core);
-        // miscLogOutput("Core Version: %s\n", newServer->coreVersion);
-        // miscLogOutput("Core CRC: %s\n", newServer->coreCRC);
-        // miscLogOutput("Subsystem Name: %s\n", newServer->subsystemName);
-        // miscLogOutput("Retroarch Version: %s\n", newServer->retroarchVersion);
-        // miscLogOutput("Frontend: %s\n", newServer->frontend);
-        // miscLogOutput("IP: %s\n", newServer->ip);
-        // miscLogOutput("Port: %d\n", newServer->port);
-        // miscLogOutput("MITM IP: %s\n", newServer->mitmIP);
-        // miscLogOutput("MITM Port: %d\n", newServer->mitmPort);
-        // miscLogOutput("MITM Session: %s\n", newServer->mitmSession);
-        // miscLogOutput("Host Method: %d\n", newServer->hostMethod);
-        // miscLogOutput("Has Password: %s\n", newServer->hasPassword ? "true" : "false");
-        // miscLogOutput("Has Spectate Password: %s\n", newServer->hasSpectatePassword ? "true" : "false");
-        // miscLogOutput("Connectable: %s\n", newServer->connectable ? "true" : "false");
-        // miscLogOutput("Is Retroarch: %s\n", newServer->isRetroarch ? "true" : "false");
-        // miscLogOutput("Created: %s\n", newServer->created);
-        // miscLogOutput("Updated: %s\n", newServer->updated);
+		// miscLogOutput(__func__, "Name: %s\n", newServer->name);
+        // miscLogOutput(__func__, "Country: %s\n", newServer->country);
+        // miscLogOutput(__func__, "Game: %s\n", newServer->game);
+        // miscLogOutput(__func__, "Game CRC: %s\n", newServer->gameCRC);
+        // miscLogOutput(__func__, "Core: %s\n", newServer->core);
+        // miscLogOutput(__func__, "Core Version: %s\n", newServer->coreVersion);
+        // miscLogOutput(__func__, "Core CRC: %s\n", newServer->coreCRC);
+        // miscLogOutput(__func__, "Subsystem Name: %s\n", newServer->subsystemName);
+        // miscLogOutput(__func__, "Retroarch Version: %s\n", newServer->retroarchVersion);
+        // miscLogOutput(__func__, "Frontend: %s\n", newServer->frontend);
+        // miscLogOutput(__func__, "IP: %s\n", newServer->ip);
+        // miscLogOutput(__func__, "Port: %d\n", newServer->port);
+        // miscLogOutput(__func__, "MITM IP: %s\n", newServer->mitmIP);
+        // miscLogOutput(__func__, "MITM Port: %d\n", newServer->mitmPort);
+        // miscLogOutput(__func__, "MITM Session: %s\n", newServer->mitmSession);
+        // miscLogOutput(__func__, "Host Method: %d\n", newServer->hostMethod);
+        // miscLogOutput(__func__, "Has Password: %s\n", newServer->hasPassword ? "true" : "false");
+        // miscLogOutput(__func__, "Has Spectate Password: %s\n", newServer->hasSpectatePassword ? "true" : "false");
+        // miscLogOutput(__func__, "Connectable: %s\n", newServer->connectable ? "true" : "false");
+        // miscLogOutput(__func__, "Is Retroarch: %s\n", newServer->isRetroarch ? "true" : "false");
+        // miscLogOutput(__func__, "Created: %s\n", newServer->created);
+        // miscLogOutput(__func__, "Updated: %s\n", newServer->updated);
 
-        // miscLogOutput("\n\n");
+        // miscLogOutput(__func__, "\n\n");
 
         serverCountGlobal++;
     }
@@ -329,7 +329,7 @@ void parseLobbyData(const char *json_text) {
 
 void parseRetrieveData() { // will retry ONCE if it fails.
     if (!retryRetrieve) {
-        miscLogOutput("Something went wrong with the json retrieval... retrying one more time.");
+        miscLogOutput(__func__, "Something went wrong with the json retrieval... retrying one more time.");
         return;
     }
 
@@ -339,13 +339,15 @@ void parseRetrieveData() { // will retry ONCE if it fails.
 
     char* response = parseSendHTTPReq(hostname, portno, message_fmt);
     if (response == NULL) {
-        miscLogOutput("ERROR: Failed to retrieve server response\n");
+        miscLogOutput(__func__, "ERROR: Failed to retrieve server response\n");
         return;
     }
 
+    // miscLogOutput(__func__, "Raw Data: %s", response); // raw data
+
     char* json_start = strstr(response, "[");
     if (json_start == NULL) {
-        miscLogOutput("ERROR: JSON content not found\n");
+        miscLogOutput(__func__, "ERROR: JSON content not found\n");
         free(response);
         retryRetrieve = false;
         parseRetrieveData();
@@ -354,7 +356,7 @@ void parseRetrieveData() { // will retry ONCE if it fails.
 
     char* json_end = strrchr(response, ']');
     if (json_end == NULL) {
-        miscLogOutput("ERROR: End of JSON not found\n");
+        miscLogOutput(__func__, "ERROR: End of JSON not found\n");
         free(response);
         retryRetrieve = false;
         parseRetrieveData();
@@ -362,11 +364,11 @@ void parseRetrieveData() { // will retry ONCE if it fails.
     }
 
     *(json_end + 1) = '\0';
-    
-    miscLogOutput("Parsing data");
+
+    miscLogOutput(__func__, "Parsing data");
     parseLobbyData(json_start);
-    miscLogOutput("Found %d servers", serverCountGlobal);
-    miscLogOutput("Freeing response data, if it exists.");
+    miscLogOutput(__func__, "Found %d servers", serverCountGlobal);
+    miscLogOutput(__func__, "Freeing response data, if it exists.");
     free(response);
     dataRetrieved = true;
 }

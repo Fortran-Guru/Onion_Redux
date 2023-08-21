@@ -34,13 +34,16 @@
 #include "parse_json.h"
 #include "gui_draw.h"
 #include "cache_local.h"
+#include "net.h"
 
 #define FRAMES_PER_SECOND 60
-#define SHUTDOWN_TIMEOUT 500
 
 /*
 TODO
+FINISH LOGGING FUNCTIONS DESCRIP
+FINISH LAN QUERY (ADD TO STRUCT, ADD TO LIST)
 */
+// asdasdsdasd
 
 bool startRetroarch = true;
 bool dataRetrieved = false;
@@ -79,18 +82,18 @@ void actionJoinServer(void *item) {
     static char cmd_line[1024] = {0};
     ListItem *listItem = (ListItem *)item;
     Server *server = (Server *)listItem->payload_ptr;
-    
+      
     // debug
     
-    miscLogOutput("Attempting to join server: %s at IP %s with port %d", server->name, server->ip, server->port);
-    miscLogOutput("Hosts rom is: %s with CRC of %s, your rom is: %s", server->game, server->gameCRC, server->local.localRomCRC);
-    miscLogOutput("Hosts core is: %s with CRC/Commit of %s", server->core, server->coreCRC);
-    miscLogOutput("Hosts RetroArch version is %s", server->retroarchVersion);
-    miscLogOutput("Hosts frontend (OS) is %s", server->frontend);
-    miscLogOutput("Hosts server has relay? %s with hostname of %s and port of %d", server->mitmSession, server->mitmIP, server->mitmPort); 
-    miscLogOutput("Hosts server has password/is private? %d", server->hasPassword);
-    miscLogOutput("Hosts server is connectable? %d", server->connectable);
-    miscLogOutput("Local rom path is: %s", server->local.romPath);
+    miscLogOutput(__func__, "Attempting to join server: %s at IP %s with port %d", server->name, server->ip, server->port);
+    miscLogOutput(__func__, "Hosts rom is: %s with CRC of %s, your rom is: %s", server->game, server->gameCRC, server->local.localRomCRC);
+    miscLogOutput(__func__, "Hosts core is: %s with CRC/Commit of %s", server->core, server->coreCRC);
+    miscLogOutput(__func__, "Hosts RetroArch version is %s", server->retroarchVersion);
+    miscLogOutput(__func__, "Hosts frontend (OS) is %s", server->frontend);
+    miscLogOutput(__func__, "Hosts server has relay? %s with hostname of %s and port of %d", server->mitmSession, server->mitmIP, server->mitmPort); 
+    miscLogOutput(__func__, "Hosts server has password/is private? %d", server->hasPassword);
+    miscLogOutput(__func__, "Hosts server is connectable? %d", server->connectable);
+    miscLogOutput(__func__, "Local rom path is: %s", server->local.romPath);
     
     if (server->connectable == 0) {
         showDialog("Connection Error", "This server is not connectable. \n \n Please try another server.");
@@ -110,24 +113,27 @@ void actionJoinServer(void *item) {
         showDialog("ROM Mismatch", message);
     }
 
-    if (miscHasRelay(server->mitmIP)) {
+    if (server->hostMethod == 3) {
         showDialog("Connection Error", "Relay servers not currently supported. \n \n Please try another server.");
-    }
-
+    }    
+    
     if (startRetroarch) {      
-        char serverIP[50];
+        char serverIP[32];
+        char serverPort[12];
         
-        if (miscHasRelay(server->mitmIP)) {
+        if (server->hostMethod == 3) {
             strcpy(serverIP, server->mitmIP);
+            sprintf(serverPort, "%d", server->mitmPort);
         } else {
             strcpy(serverIP, server->ip);
+            sprintf(serverPort, "%d", server->port);
         }
         
         snprintf(cmd_line, sizeof(cmd_line), 
-                 "HOME=/mnt/SDCARD/RetroArch cd /mnt/SDCARD/RetroArch && ./retroarch -C %s -v -L \"%s\" \"%s\"",
-                 serverIP, server->local.corePath, server->local.romPath);
+                 "HOME=/mnt/SDCARD/RetroArch cd /mnt/SDCARD/RetroArch && ./retroarch -C %s --port=%s -v -L \"%s\" \"%s\"",
+                 serverIP, serverPort, server->local.corePath, server->local.romPath);
 
-        miscLogOutput("Prepared command: %s", cmd_line);
+        miscLogOutput(__func__, "Prepared command: %s", cmd_line);
 
         printf("CMD_OUTPUT: %s\n", cmd_line); // leave me as printf.
         quit = true;
@@ -155,7 +161,7 @@ int main(int argc, char *argv[])
     serverCountGlobal = 0;
            
     if (!majorVersion) {
-        miscLogOutput("Error retrieving the major version.\n");
+        miscLogOutput(__func__, "Error retrieving the major version.\n");
         return 1;
     }
     
@@ -166,21 +172,23 @@ int main(int argc, char *argv[])
     SDL_BlitSurface(screen, NULL, video, NULL);
     SDL_Flip(video);
             
-    if (miscWlan0Exists()) {
-        bool serverIsReachable = miscIsServerReachable("34.102.164.250"); // RA lobby server IP address 34.102.164.250, test no connection with 123.231.123.231
+    if (netWlan0Exists()) {
+        pthread_t queryThread;
+        pthread_create(&queryThread, NULL, netQueryLanThread, NULL);
+        bool serverIsReachable = netIsServerReachable("34.102.164.250"); // RA lobby server IP address 34.102.164.250, test no connection with 123.231.123.231
 
         if(serverIsReachable) {
-            miscLogOutput("Reachable! Sending data request");
+            miscLogOutput(__func__, "Reachable! Sending data request");
             parseRetrieveData();
             myriadCoreVersionIndexer();
-            miscLogOutput("Building server list");
+            miscLogOutput(__func__, "Building server list");
         } else {
-            miscLogOutput("Unable to reach server, cannot continue");
+            miscLogOutput(__func__, "Unable to reach server, cannot continue");
             lobbyReachable = false;
             strncpy(title_str, "No Connection", STR_MAX);
         }
     } else {
-        miscLogOutput("Wifi disabled? wlan0 not found");
+        miscLogOutput(__func__, "Wifi disabled? wlan0 not found");
         strncpy(title_str, "Wifi Disabled", STR_MAX);
         wifiDisabled = true;
     }
@@ -199,11 +207,11 @@ int main(int argc, char *argv[])
             
             // checks ping, but most servers don't actually reply - will integrate this later
             
-            // double latency = miscGetLatency(serversGlobal[i].ip);
+            // double latency = netGetLatency(serversGlobal[i].ip);
             // if (latency >= 0) {
-                // miscLogOutput("Estimated latency to %s: %.6f seconds", serversGlobal[i].ip, latency);
+                // miscLogOutput(__func__, "Estimated latency to %s: %.6f seconds", serversGlobal[i].ip, latency);
             // } else {
-                // miscLogOutput("Failed to estimate latency to %s.", serversGlobal[i].ip);
+                // miscLogOutput(__func__, "Failed to estimate latency to %s.", serversGlobal[i].ip);
             // }
             
             char prefix[50] = "";
@@ -214,14 +222,21 @@ int main(int argc, char *argv[])
                     strcpy(prefix, "[Passworded] ");
                 }
                 
-                char* found_rom_path = cacheLookupRomLocal(serversGlobal[i].game);
+                char* found_rom_path = NULL;
+                bool found_in_cache = false;
+
+                if (serversGlobal[i].gameCRC) {
+                    found_rom_path = cacheLookupRomLocal(serversGlobal[i].gameCRC, true);
+                    if (found_rom_path) found_in_cache = true;
+                }
+                if (!found_rom_path) {
+                    found_rom_path = cacheLookupRomLocal(serversGlobal[i].game, false);
+                    if (found_rom_path) found_in_cache = true;
+                }
                 if (!found_rom_path) {
                     found_rom_path = myriadSearchRomPathSQ(BASE_PATH_ROM, serversGlobal[i].game);
                     if (!found_rom_path) {
                         found_rom_path = myriadSearchRomRecursive(BASE_PATH_ROM, serversGlobal[i].game);
-                    }
-                    if (found_rom_path) {
-                        cacheAddRom(serversGlobal[i].game, found_rom_path);
                     }
                 }
 
@@ -236,7 +251,7 @@ int main(int argc, char *argv[])
                     serversGlobal[i].local.corePath[sizeof(serversGlobal[i].local.corePath) - 1] = '\0';
                 }
                 
-                if(serversGlobal[i].local.romPath[0] != '\0') {
+                if (serversGlobal[i].local.romPath[0] != '\0') {
                     if (miscHasFileExt(serversGlobal[i].local.romPath, ".zip") || miscHasFileExt(serversGlobal[i].local.romPath, ".7z")) {
                         char *tempCRC = miscGet7zCRC(serversGlobal[i].local.romPath);
                         if (tempCRC) {
@@ -249,14 +264,17 @@ int main(int argc, char *argv[])
                         snprintf(serversGlobal[i].local.localRomCRC, sizeof(serversGlobal[i].local.localRomCRC), "%08lX", rom_crc);
                     }
 
-                    char* imgFilePath = myriadBuildImgPath(serversGlobal[i].local.romPath);
-                    if (imgFilePath) {
-                        strncpy(serversGlobal[i].local.imgPath, imgFilePath, sizeof(serversGlobal[i].local.imgPath) - 1);
-                        serversGlobal[i].local.imgPath[sizeof(serversGlobal[i].local.imgPath) - 1] = '\0';
+                    if (!found_in_cache) {
+                        cacheAddRom(serversGlobal[i].game, found_rom_path, serversGlobal[i].local.localRomCRC);
+
+                        char* imgFilePath = myriadBuildImgPath(serversGlobal[i].local.romPath);
+                        if (imgFilePath) {
+                            strncpy(serversGlobal[i].local.imgPath, imgFilePath, sizeof(serversGlobal[i].local.imgPath) - 1);
+                            serversGlobal[i].local.imgPath[sizeof(serversGlobal[i].local.imgPath) - 1] = '\0';
+                        }
                     }
-                } 
-                else {
-                    miscLogOutput("No rom path available for server: %s and rom: ", serversGlobal[i].name, serversGlobal[i].game);
+                } else {
+                    miscLogOutput(__func__, "No rom path available for server: %s and rom: %s \n", serversGlobal[i].name, serversGlobal[i].game);
                 }
             }
 
@@ -276,8 +294,7 @@ int main(int argc, char *argv[])
     }
     
     // miscPrintAllServers(); //debug
-   
-
+       
     list_scrollTo(&list, selected);
 
     bool has_title = strlen(title_str) > 0;
@@ -453,8 +470,8 @@ int main(int argc, char *argv[])
                     }
                     
                     // relay icon
-                    if (miscHasRelay(selectedServer->mitmIP)) {
-                        drawgenericIcon(screen, RELAY_miscHasRelay, 555, 180);
+                    if (netHasRelay(selectedServer->mitmIP)) {
+                        drawgenericIcon(screen, RELAY_HAS_RELAY, 555, 180);
                     } else {
                         drawgenericIcon(screen, PASSWORD_RELAY_LOCK, 555, 180);
                     }
@@ -466,7 +483,7 @@ int main(int argc, char *argv[])
                     
                     // check if good match (rom matches, onion hosted server, no relay, ra version matches)
                     if (miscStringContains(selectedServer->name, "Onion")) {
-                        if (!miscHasRelay(selectedServer->mitmIP)) {
+                        if (!netHasRelay(selectedServer->mitmIP)) {
                             if (strcmp(selectedServer->local.localRomCRC, selectedServer->gameCRC) == 0) {
                                 if (strncmp(selectedServer->retroarchVersion, majorVersion, strlen(majorVersion)) == 0) {
                                     drawgenericIcon(screen, GOOD_MATCH, 551, 70);
@@ -508,7 +525,7 @@ int main(int argc, char *argv[])
     SDL_Flip(video);
 
     // bit of cleanup 
-    miscLogOutput("Cleaning up");
+    miscLogOutput(__func__, "Cleaning up");
     lang_free();
     list_free(&list);
     miscFreeServerGlobal();
@@ -517,6 +534,6 @@ int main(int argc, char *argv[])
     resources_free();
     SDL_FreeSurface(screen);
     SDL_FreeSurface(video);
-    miscLogOutput("Cleanup complete");
+    miscLogOutput(__func__, "Cleanup complete");
     SDL_Quit();
 }

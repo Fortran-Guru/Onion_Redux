@@ -22,7 +22,7 @@
 #define RA_MISMATCH RESOURCES_DIR "srvr_brwsr_r_raver_bad.png"
 
 // relayserver
-#define RELAY_miscHasRelay RESOURCES_DIR "srvr_brwsr_rl_hasrelay.png"
+#define RELAY_HAS_RELAY RESOURCES_DIR "srvr_brwsr_rl_hasrelay.png"
 #define RELAY_NORELAY RESOURCES_DIR "srvr_brwsr_rl_lock.png"
 
 // pwd
