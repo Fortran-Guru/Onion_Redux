@@ -37,6 +37,10 @@ const char *valid_extensions[] = { // probably dont need all these but it's evey
     ".ngc", ".sv", ".uze", ".sfc", ".vms", ".gb", NULL
 };
 
+bool miscHasRelay(const char* mitmIP) { // check if the mitm struct member contains a hostname (it'll be longer than 8 chars if so, shorter if not)
+    return strlen(mitmIP) > 8;
+}
+
 static char cachedVersion[STR_MAX] = {0};
 
 char* miscGetRAMajorVersion() { // pull our RA version info to compare against the host

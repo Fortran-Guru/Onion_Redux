@@ -23,14 +23,16 @@
 
 // relayserver
 #define RELAY_HAS_RELAY RESOURCES_DIR "srvr_brwsr_rl_hasrelay.png"
-#define RELAY_NORELAY RESOURCES_DIR "srvr_brwsr_rl_lock.png"
+#define RELAY_NO_RELAY RESOURCES_DIR "srvr_brwsr_rl_lock.png"
 
 // pwd
 #define PASSWORD_HASPWD RESOURCES_DIR "srvr_brwsr_lock.png"
-#define PASSWORD_RELAY_LOCK RESOURCES_DIR "srvr_brwsr_rl_lock.png"
 
 // good match (indicates rom, core, ra ver and a miyoo host)
 #define GOOD_MATCH RESOURCES_DIR "srvr_brwsr_good_match.png"
+
+// LAN
+#define SERVER_LAN RESOURCES_DIR "srvr_brwsr_s_lan.png"
 
 void drawboxArt(SDL_Surface* screen, const char* rom_name);
 void drawgenericIcon(SDL_Surface* screen, const char* img_path, int x, int y);

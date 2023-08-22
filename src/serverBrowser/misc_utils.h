@@ -36,7 +36,7 @@ char* miscGetRAMajorVersion(void);
 
 // RELAY CHECK
 
-bool netHasRelay(const char* mitmIP);
+bool miscHasRelay(const char* mitmIP);
 
 // struct check
 bool miscStringContains(const char* str, const char* substr);

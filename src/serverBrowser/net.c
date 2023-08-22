@@ -40,18 +40,17 @@ bool netIsServerReachable(const char* ip) { // checks servers are reachable
 }
 
 void netQueryLan() {
+    miscLogOutput(__func__, "Starting LAN server search...");
     int sock;
     struct sockaddr_in serverAddr;
     int sendPort;
     char discoveryMagic[] = DISCOVERY_MAGIC;
-    char buffer[BUFFER_SIZE]; 
+    char buffer[BUFFER_SIZE];
     char readableBuffer[BUFFER_SIZE];
-    
-    time_t startTime = time(NULL);
-    time_t currentTime;
+    ssize_t recvLen;
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("Failed to create socket");
+        miscLogOutput(__func__, "Failed to create socket");
         return;
     }
 
@@ -63,14 +62,24 @@ void netQueryLan() {
     serverAddr.sin_port = htons(sendPort);
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Failed to bind socket");
+        miscLogOutput(__func__, "Failed to bind socket");
+        close(sock);
+        return;
+    }
+    
+    struct timeval timeout;
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+        miscLogOutput(__func__, "Failed to set socket timeout");
         close(sock);
         return;
     }
 
     int broadcastEnable = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) < 0) {
-        perror("Failed to enable broadcasting");
+        miscLogOutput(__func__, "Failed to enable broadcasting");
         close(sock);
         return;
     }
@@ -80,13 +89,13 @@ void netQueryLan() {
     broadcastAddr.sin_family = AF_INET;
     broadcastAddr.sin_port = htons(BROADCAST_PORT);
     if (inet_aton(BROADCAST_ADDRESS, &broadcastAddr.sin_addr) == 0) {
-        perror("Invalid broadcast address");
+        miscLogOutput(__func__, "Invalid broadcast address");
         close(sock);
         return;
     }
 
     if (sendto(sock, discoveryMagic, strlen(discoveryMagic), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) < 0) {
-        perror("Failed to send discovery packet");
+        miscLogOutput(__func__, "Failed to send discovery packet");
         close(sock);
         return;
     }
@@ -94,14 +103,22 @@ void netQueryLan() {
     do {
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
-        ssize_t recvLen = recvfrom(sock, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&clientAddr, &clientLen);
+        recvLen = recvfrom(sock, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&clientAddr, &clientLen);
         if (recvLen < 0) {
-            perror("Failed to receive data");
+            miscLogOutput(__func__, "Failed to receive data");
             break;
         }
 
-        
-        
+        serversGlobal = realloc(serversGlobal, (serverCountGlobal + 1) * sizeof(Server));
+        if (serversGlobal == NULL) {
+            miscLogOutput(__func__, "Failed to allocate memory for serversGlobal");
+            close(sock);
+            return;
+        }
+
+        Server *server = &serversGlobal[serverCountGlobal];
+        memset(server, 0, sizeof(Server)); 
+
         for (ssize_t i = 0; i < recvLen; ++i) {
             if (buffer[i] == '\x00') {
                 readableBuffer[i] = ' ';
@@ -114,12 +131,11 @@ void netQueryLan() {
         readableBuffer[recvLen] = '\0';
 
         char *token, *startPtr, *endPtr;
-        char *fields[] = {"[request]= ", "[..]= ", "[host]= ", "[platform]= ", "[core]= ", "[corecrc]= ", "[retroarchv]= ", "[rom]= "};
+        char *fields[] = {"[request]= ", "[..]= ", "[host]= ", "[platform]= ", "[core]= ", "[corever]= ", "[retroarchv]= ", "[rom]= "};
         int fieldIndex = 0;
 
         startPtr = readableBuffer;
-        miscLogOutput(__func__, "LAN servers found:");
-        miscLogOutput(__func__, "[hostip]: %s", inet_ntoa(clientAddr.sin_addr));
+        strncpy(server->ip, inet_ntoa(clientAddr.sin_addr), 23);
         while (startPtr < readableBuffer + recvLen && fieldIndex < sizeof(fields) / sizeof(fields[0])) {
             endPtr = startPtr;
             while (*endPtr != ' ' || *(endPtr + 1) != ' ') {
@@ -129,8 +145,28 @@ void netQueryLan() {
             char temp = *endPtr;
             *endPtr = '\0';
             token = startPtr;
-           
+
+            switch (fieldIndex) {
+                case 2: strncpy(server->name, token, 95); break;
+                case 3: strncpy(server->frontend, token, 11); break;
+                case 4: strncpy(server->core, token, 95); break;
+                case 5: {
+                    char *spacePos = strchr(token, ' '); // splitting off the cores version and crc so we can match against it in the struct 
+                    if (spacePos) {
+                        *spacePos = '\0'; 
+                        strncpy(server->coreVersion, token, sizeof(server->coreVersion) - 1);
+                        strncpy(server->coreCRC, spacePos + 1, sizeof(server->coreCRC) - 1);
+                    }
+                    break;
+                }
+                case 6: strncpy(server->retroarchVersion, token, 11); break;
+                case 7: strncpy(server->game, token, 95); break;
+            }
+
             miscLogOutput(__func__, "%s%s", fields[fieldIndex++], token);
+            
+            server->connectable = 1;
+            strncpy(server->country, "LAN", sizeof(server->country) - 1); // just a breadcrumb for us to pick up in main
 
             *endPtr = temp;
             startPtr = endPtr + 1;
@@ -139,21 +175,11 @@ void netQueryLan() {
             }
         }
 
-        fflush(stdout);
-        currentTime = time(NULL);
-    } while (difftime(currentTime, startTime) < 4.0); // Continue for 4 seconds
+        serverCountGlobal++;
+    } while (recvLen >= 0);
 
     close(sock);
-}
-
-void* netQueryLanThread(void* arg) { // allows us to background the LAN search while the global search also happens
-    netQueryLan(); 
-    return NULL;
-}
-
-
-bool netHasRelay(const char* mitmIP) { // check if the mitm struct member contains a hostname (it'll be longer than 8 chars if so, shorter if not)
-    return strlen(mitmIP) > 8;
+    miscLogOutput(__func__, "LAN server search ended");
 }
 
 bool netWlan0Exists() { // quick check to see if wlan0 is active, if it's been disabled it disappears from the net class

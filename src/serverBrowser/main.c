@@ -107,7 +107,7 @@ void actionJoinServer(void *item) {
         showDialog("Core Not Found", "Core not found. \n \n Cannot proceed.");
     }
 
-    if (strcmp(server->local.localRomCRC, server->gameCRC) != 0) {
+    if (strcmp(server->country, "LAN") != 0 && strcmp(server->local.localRomCRC, server->gameCRC) != 0) { // bypass if lan
         char message[STR_MAX];
         snprintf(message, sizeof(message), "ROM CRC mismatch. \n \n Expected: %s, \n Found: %s. \n \n Cannot proceed.", server->gameCRC, server->local.localRomCRC);
         showDialog("ROM Mismatch", message);
@@ -121,13 +121,16 @@ void actionJoinServer(void *item) {
         char serverIP[32];
         char serverPort[12];
         
-        if (server->hostMethod == 3) {
-            strcpy(serverIP, server->mitmIP);
-            sprintf(serverPort, "%d", server->mitmPort);
-        } else {
-            strcpy(serverIP, server->ip);
-            sprintf(serverPort, "%d", server->port);
+    if (server->hostMethod == 3) {
+        strcpy(serverIP, server->mitmIP);
+        sprintf(serverPort, "%d", server->mitmPort);
+    } else {
+        strcpy(serverIP, server->ip);
+        if (server->port == 0) {
+            server->port = 55435; // handle this here for if we scan LAN (it doesn't return a port number)
         }
+        sprintf(serverPort, "%d", server->port);
+    }
         
         snprintf(cmd_line, sizeof(cmd_line), 
                  "HOME=/mnt/SDCARD/RetroArch cd /mnt/SDCARD/RetroArch && ./retroarch -C %s --port=%s -v -L \"%s\" \"%s\"",
@@ -144,7 +147,6 @@ void actionJoinServer(void *item) {
 
 int main(int argc, char *argv[])
 {
-    
     signal(SIGINT, sigHandler);
     signal(SIGTERM, sigHandler);
 
@@ -173,8 +175,8 @@ int main(int argc, char *argv[])
     SDL_Flip(video);
             
     if (netWlan0Exists()) {
-        pthread_t queryThread;
-        pthread_create(&queryThread, NULL, netQueryLanThread, NULL);
+        netQueryLan(); // query the LAN here so these are top of the list
+        
         bool serverIsReachable = netIsServerReachable("34.102.164.250"); // RA lobby server IP address 34.102.164.250, test no connection with 123.231.123.231
 
         if(serverIsReachable) {
@@ -215,67 +217,81 @@ int main(int argc, char *argv[])
             // }
             
             char prefix[50] = "";
+            char* found_rom_path = NULL;
+            bool found_in_cache = false;
+            
             if(serversGlobal[i].connectable == 0) {
                 strcpy(prefix, "[Not connectable] ");
-            } else {
-                if(serversGlobal[i].hasPassword != 0) {
-                    strcpy(prefix, "[Passworded] ");
-                }
-                
-                char* found_rom_path = NULL;
-                bool found_in_cache = false;
-
-                if (serversGlobal[i].gameCRC) {
-                    found_rom_path = cacheLookupRomLocal(serversGlobal[i].gameCRC, true);
-                    if (found_rom_path) found_in_cache = true;
-                }
-                if (!found_rom_path) {
-                    found_rom_path = cacheLookupRomLocal(serversGlobal[i].game, false);
-                    if (found_rom_path) found_in_cache = true;
-                }
+            } 
+            
+            if(serversGlobal[i].hasPassword != 0) {
+                strcpy(prefix, "[Passworded] ");
+            }
+            
+            if (strcmp(serversGlobal[i].country, "LAN") == 0) {
+                strcpy(prefix, "[LAN] ");
+                found_rom_path = cacheLookupRomLocal(serversGlobal[i].game, false);
                 if (!found_rom_path) {
                     found_rom_path = myriadSearchRomPathSQ(BASE_PATH_ROM, serversGlobal[i].game);
                     if (!found_rom_path) {
                         found_rom_path = myriadSearchRomRecursive(BASE_PATH_ROM, serversGlobal[i].game);
                     }
                 }
-
-                if (found_rom_path) {
-                    strncpy(serversGlobal[i].local.romPath, found_rom_path, sizeof(serversGlobal[i].local.romPath) - 1);
-                    serversGlobal[i].local.romPath[sizeof(serversGlobal[i].local.romPath) - 1] = '\0';
-                }
-
-                char* found_core_path = myriadSearchCorePath(BASE_PATH_CORE, serversGlobal[i].core);
-                if (found_core_path) {
-                    strncpy(serversGlobal[i].local.corePath, found_core_path, sizeof(serversGlobal[i].local.corePath) - 1);
-                    serversGlobal[i].local.corePath[sizeof(serversGlobal[i].local.corePath) - 1] = '\0';
+            } else {   
+                if (serversGlobal[i].gameCRC) {
+                    found_rom_path = cacheLookupRomLocal(serversGlobal[i].gameCRC, true);
+                    if (found_rom_path) found_in_cache = true;
                 }
                 
-                if (serversGlobal[i].local.romPath[0] != '\0') {
-                    if (miscHasFileExt(serversGlobal[i].local.romPath, ".zip") || miscHasFileExt(serversGlobal[i].local.romPath, ".7z")) {
-                        char *tempCRC = miscGet7zCRC(serversGlobal[i].local.romPath);
-                        if (tempCRC) {
-                            strncpy(serversGlobal[i].local.localRomCRC, tempCRC, sizeof(serversGlobal[i].local.localRomCRC) - 1);
-                            serversGlobal[i].local.localRomCRC[sizeof(serversGlobal[i].local.localRomCRC) - 1] = '\0';
-                            free(tempCRC);
-                        }
-                    } else {
-                        unsigned long rom_crc = miscCalculateCRC32(serversGlobal[i].local.romPath);
-                        snprintf(serversGlobal[i].local.localRomCRC, sizeof(serversGlobal[i].local.localRomCRC), "%08lX", rom_crc);
+                if (!found_rom_path) {
+                    found_rom_path = cacheLookupRomLocal(serversGlobal[i].game, false);
+                    if (found_rom_path) found_in_cache = true;
+                }
+                
+                if (!found_rom_path) {
+                    found_rom_path = myriadSearchRomPathSQ(BASE_PATH_ROM, serversGlobal[i].game);
+                    if (!found_rom_path) {
+                        found_rom_path = myriadSearchRomRecursive(BASE_PATH_ROM, serversGlobal[i].game);
                     }
+                }
+            }
+                
+            if (found_rom_path) {
+                strncpy(serversGlobal[i].local.romPath, found_rom_path, sizeof(serversGlobal[i].local.romPath) - 1);
+                serversGlobal[i].local.romPath[sizeof(serversGlobal[i].local.romPath) - 1] = '\0';
+            }
 
-                    if (!found_in_cache) {
-                        cacheAddRom(serversGlobal[i].game, found_rom_path, serversGlobal[i].local.localRomCRC);
-
-                        char* imgFilePath = myriadBuildImgPath(serversGlobal[i].local.romPath);
-                        if (imgFilePath) {
-                            strncpy(serversGlobal[i].local.imgPath, imgFilePath, sizeof(serversGlobal[i].local.imgPath) - 1);
-                            serversGlobal[i].local.imgPath[sizeof(serversGlobal[i].local.imgPath) - 1] = '\0';
-                        }
+            char* found_core_path = myriadSearchCorePath(BASE_PATH_CORE, serversGlobal[i].core);
+            if (found_core_path) {
+                strncpy(serversGlobal[i].local.corePath, found_core_path, sizeof(serversGlobal[i].local.corePath) - 1);
+                serversGlobal[i].local.corePath[sizeof(serversGlobal[i].local.corePath) - 1] = '\0';
+            }
+            
+            if (serversGlobal[i].local.romPath[0] != '\0') {
+                if (miscHasFileExt(serversGlobal[i].local.romPath, ".zip") || miscHasFileExt(serversGlobal[i].local.romPath, ".7z")) {
+                    char *tempCRC = miscGet7zCRC(serversGlobal[i].local.romPath);
+                    if (tempCRC) {
+                        strncpy(serversGlobal[i].local.localRomCRC, tempCRC, sizeof(serversGlobal[i].local.localRomCRC) - 1);
+                        serversGlobal[i].local.localRomCRC[sizeof(serversGlobal[i].local.localRomCRC) - 1] = '\0';
+                        free(tempCRC);
                     }
                 } else {
-                    miscLogOutput(__func__, "No rom path available for server: %s and rom: %s \n", serversGlobal[i].name, serversGlobal[i].game);
+                    unsigned long rom_crc = miscCalculateCRC32(serversGlobal[i].local.romPath);
+                    snprintf(serversGlobal[i].local.localRomCRC, sizeof(serversGlobal[i].local.localRomCRC), "%08lX", rom_crc);
                 }
+
+                if (!found_in_cache) {
+                    cacheAddRom(serversGlobal[i].game, found_rom_path, serversGlobal[i].local.localRomCRC);
+                }
+                
+                char* imgFilePath = myriadBuildImgPath(serversGlobal[i].local.romPath);
+                if (imgFilePath) {
+                    strncpy(serversGlobal[i].local.imgPath, imgFilePath, sizeof(serversGlobal[i].local.imgPath) - 1);
+                    serversGlobal[i].local.imgPath[sizeof(serversGlobal[i].local.imgPath) - 1] = '\0';
+                }
+                
+            } else {
+                miscLogOutput(__func__, "No rom path available for server: %s and rom: %s \n", serversGlobal[i].name, serversGlobal[i].game);
             }
 
             char fullLabel[STR_MAX];
@@ -441,13 +457,16 @@ int main(int argc, char *argv[])
                     // box art
                     drawboxArt(screen, selectedServer->local.imgPath);
                     
+                    // rom icon
                     if (strlen(selectedServer->local.romPath) == 0) {
                         drawgenericIcon(screen, ROM_MISSING, 555, 75);
-                    } else if (strcmp(selectedServer->local.localRomCRC, selectedServer->gameCRC) == 0) {
-                        drawgenericIcon(screen, ROM_OK, 555, 75);
+                    } else if (strcmp(selectedServer->local.localRomCRC, selectedServer->gameCRC) == 0 || 
+                               (strcmp(selectedServer->country, "LAN") == 0 && strlen(selectedServer->local.romPath) > 0)) {
+                        drawgenericIcon(screen, ROM_OK, 555, 75); // we don't get a CRC from a LAN server, it's basically "have we found the rom? show green"
                     } else {
                         drawgenericIcon(screen, ROM_BADCRC, 555, 75);
                     }
+
                     
                     // core icon (5 pixel space from rom icon)
                     if (strlen(selectedServer->local.corePath) == 0) {
@@ -461,7 +480,6 @@ int main(int argc, char *argv[])
                         }
                     }
                     
-                    
                     // ra version checker
                     if (strncmp(selectedServer->retroarchVersion, majorVersion, strlen(majorVersion)) == 0) {
                         drawgenericIcon(screen, RA_MATCH, 555, 145);
@@ -470,10 +488,12 @@ int main(int argc, char *argv[])
                     }
                     
                     // relay icon
-                    if (netHasRelay(selectedServer->mitmIP)) {
+                    if (strcmp(selectedServer->country, "LAN") == 0) {
+                        drawgenericIcon(screen, SERVER_LAN, 555, 180);
+                    } else if (miscHasRelay(selectedServer->mitmIP)) {
                         drawgenericIcon(screen, RELAY_HAS_RELAY, 555, 180);
                     } else {
-                        drawgenericIcon(screen, PASSWORD_RELAY_LOCK, 555, 180);
+                        drawgenericIcon(screen, RELAY_NO_RELAY, 555, 180);
                     }
                     
                     // show password outline
@@ -483,14 +503,13 @@ int main(int argc, char *argv[])
                     
                     // check if good match (rom matches, onion hosted server, no relay, ra version matches)
                     if (miscStringContains(selectedServer->name, "Onion")) {
-                        if (!netHasRelay(selectedServer->mitmIP)) {
-                            if (strcmp(selectedServer->local.localRomCRC, selectedServer->gameCRC) == 0) {
-                                if (strncmp(selectedServer->retroarchVersion, majorVersion, strlen(majorVersion)) == 0) {
-                                    drawgenericIcon(screen, GOOD_MATCH, 551, 70);
-                                }
-                            }
+                        if ((!miscHasRelay(selectedServer->mitmIP) || strcmp(selectedServer->country, "LAN") == 0) &&
+                            (strcmp(selectedServer->country, "LAN") == 0 || strcmp(selectedServer->local.localRomCRC, selectedServer->gameCRC) == 0) &&
+                            strncmp(selectedServer->retroarchVersion, majorVersion, strlen(majorVersion)) == 0) {
+                            drawgenericIcon(screen, GOOD_MATCH, 551, 70);
                         }
                     }
+
                 }
             }
             

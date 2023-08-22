@@ -2,14 +2,12 @@
 #define VAULT_H
 
 // Below holds the cores and version we pull with myriadCoreVersionIndexer
-
 typedef struct {
     char coreName[50];
     char version[50];
 } coreInfo;
 
-// Below holds local data but is part of the server struct
-
+// Local data 
 typedef struct {
     char romPath[STR_MAX];
     char corePath[STR_MAX];
@@ -19,8 +17,7 @@ typedef struct {
     char version[50];
 } LocalData;
 
-// Below holds data we parse from the json pull from lobby
-
+// Global servers
 typedef struct {
     char name[96];
     char country[8];
